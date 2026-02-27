@@ -1,0 +1,21 @@
+500
+0.14    0.55    0.24    0.07    0.64    0.59    0.34    0.46    0.20    0.24    0.35
+0.2
+0.002
+32
+3
+340
+1e12
+11
+180
+
+////////////////////////////
+111C-111C (DFT) 100C-100C (DFT)  111<->111 (DFT)  111->100 (DFT)   100->111 (DFT)    100B-100C (DFT)  111B-111C (DFT)  100C-100B (DFT) push (DFT)  111misto->100Au (DFT)  kink
+E_b
+F
+filling (%)
+type (3 = kMC)
+temperature
+prefactor TST
+n diffusion classes
+total time 
