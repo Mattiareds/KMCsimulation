@@ -1,10 +1,12 @@
 #include "geometry.h"
 #include "metropolis.h"
 #include "coordinates.h"
+#include <iostream>
 
 
 void geometry::make_planes(){
     //100 tipo 0
+    std::cout<<"Making planes with: "<<st->get_Ncut(0)<<" "<<st->get_Ncut(1)<<" "<<st->get_Ncut(2)<<std::endl;
     planes.push_back({0,0,1,st->get_dpv()/(sqrt(2))*(st->get_spigolo()-1-st->get_Ncut(0))}); //piano sopra
     planes.push_back({0,0,-1,st->get_dpv()/(sqrt(2))*(st->get_spigolo()-1-st->get_Ncut(1))}); //piano sotto
     planes.push_back({1,0,0,st->get_dpv()/(sqrt(2))*(st->get_spigolo()-1-st->get_Ncut(2))});  
@@ -45,14 +47,14 @@ int plane_type(int i){
 //to do, for each type of coordinate readed, BEFORE the simulation
 void geometry::site_characterisation(){
     //which plane?
-    info_plane_sites.resize(st->sites_size(), std::vector<int>(4,0));
-    type_of_plane.resize(st->sites_size(),0);
+    info_plane_sites.resize(st->sites_size(), std::vector<int>(5,0));
+    type_of_plane.resize(st->sites_size(), 0);
     std::vector<int> counter(info_plane_sites.size(), 0);
-    for(int i=0;i<st->sites_size();i++){
+    for(int i=0; i<st->sites_size(); i++){
         for(int j=0;j<planes.size();j++){
             if(test_piano(i,j)==true) {
                 if(counter[i]==0){
-                    info_plane_sites[i][1]=(double) j;
+                    info_plane_sites[i][1] = (double) j;
                     type_of_plane[i] = plane_type(j);
                 }
                 else if(counter[i]==1){
@@ -97,7 +99,7 @@ void geometry::initialize_nn(){
     table_of_nn.resize(st->sites_size(),std::vector<int>(0,0));
     for(int j=0;j<st->sites_size();j++){
         for(int i=0;i<st->sites_size();i++){
-            if(i!=j) if((sqrt( pow((st->site_x(j) - st->site_x(i)),2) + pow((st->site_y(j) - st->site_y(i)),2) + pow((st->site_z(j)-st->site_z(i)),2) ) - st->get_dpv() ) < 0.05) table_of_nn[j].push_back(i);
+            if(i!=j && (sqrt( pow((st->site_x(j) - st->site_x(i)),2) + pow((st->site_y(j) - st->site_y(i)),2) + pow((st->site_z(j)-st->site_z(i)),2) ) - st->get_dpv() ) < 0.08 ) table_of_nn[j].push_back(i); 
         }
     }
 }
@@ -107,7 +109,7 @@ void geometry::initialize_external_nn(coordinates& core){
     table_of_nn.resize(st->sites_size(),std::vector<int>(0,0));
     for(int j=0;j<st->sites_size();j++){
         for(int i=0;i<core.sites_size();i++){
-            if(i!=j) if((sqrt( pow((st->site_x(j) - core.site_x(i)),2) + pow((st->site_y(j) - core.site_y(i)),2) + pow((st->site_z(j)-core.site_z(i)),2) ) - st->get_dpv() ) < 0.05) table_of_nn[j].push_back(i);
+            if(i!=j) if((sqrt( pow((st->site_x(j) - core.site_x(i)),2) + pow((st->site_y(j) - core.site_y(i)),2) + pow((st->site_z(j)-core.site_z(i)),2) ) - st->get_dpv() ) < 0.08 ) table_of_nn[j].push_back(i);
         }
     }
 }
@@ -117,6 +119,9 @@ void geometry::pv_substitution(){
     
 }
 
-
-
-
+void geometry::starter(){
+    planes.resize(0,std::vector<double>(0,0.0));
+    make_planes();
+    site_characterisation();
+    initialize_nn();
+}

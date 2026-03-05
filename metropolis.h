@@ -13,8 +13,8 @@ class metropolis{
     geometry& h_s; //high sites
     std::random_device rd;
     std::mt19937 rng;
-    std::uniform_int_distribution<int> initial_pos;
-    std::uniform_int_distribution<int> dist_time;
+    std::uniform_real_distribution<double> initial_pos;
+    std::uniform_real_distribution<double> dist_time;
 
     std::vector<bool> atoms;
     std::vector<int> interested_sites; //sites interested in the last iteration
@@ -54,25 +54,22 @@ class metropolis{
     void classification();
     void probability_filler();
     void start_of_the_sim();
-    void file_reader(std::ifstream& ifile);
     void time_prob_calc();
     void map_of_class_eraser(int c, int i, int j);
     void deposition_func();
     void print_output();
-
     int * barrier_chooser(int cl);
 
     public:
     //builder
     metropolis(coordinates& structure, geometry& sites, geometry& high_sites)
         : crd(structure), s(sites), h_s(high_sites),
-          rng(rd()), initial_pos(0,1) , dist_time(0,1)
+          rng(rd()), initial_pos(0.0,1.0) , dist_time(0.0,1.0)
     { 
     }
 
-    //qui fare una funzione sola che faccia andare il tutto, e ovviamente sia accessibile dall'esterno
+    void file_reader(std::ifstream& ifile);
     void simulation(); //questa unica accessibile da esterno
-    //fare anche funzioni di print esterno che siano accessibili
 
 };
 

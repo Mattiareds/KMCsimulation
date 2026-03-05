@@ -1,0 +1,2 @@
+New atom: 32    at time: 0
+111border to 111border different facets with: 0 nearest neighbors  from    32  to    1428063847

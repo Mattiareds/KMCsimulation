@@ -1,6 +1,7 @@
 #include "coordinates.h"
 #include "geometry.h"
 #include "metropolis.h"
+#include <iostream>
 
 /*per il calcolo delle probabilità:
 1) si ha un vettore con tutte le probabilità associate ad ogni sito, a prescindere dall'occupazione o meno da parte di un atomo (probabilità di base, no pv)
@@ -62,7 +63,9 @@ void metropolis::interested_sites_calc(bool dep){
 //pos is the initial and, after, the final position of the jump 
 void metropolis::nn_updater(bool dep){
     std::vector<int> nn_pos = s.get_table_of_nn(pos);
+    std::cout<<nn_pos.size()<<std::endl;
     for(int j=0 ; j< nn_pos.size() ; j++){ //nn of the jump
+        //std::cout << nn_pos[j]<<std::endl;
         int count=0;
         std::vector<int> nn_of_nn = s.get_table_of_nn(nn_pos[j]);
         for(int i=0 ; i<nn_of_nn.size() ; i++) { //for each nn update its number of nn
@@ -95,38 +98,47 @@ void metropolis::table_of_processes_filler(){
             if(s.get_TOPl(i)==1 || (s.get_TOPl(i)==8 && s.get_TOPl(pv)==8 && s.get_plane(i,1)==s.get_plane(pv,1))){
                  table_of_processes[i].push_back(0); //111c 111c
                  table_of_end_pos[i].push_back(pv);
+                 std::cout<<"belin mea chi ghe n'processu: 1 "<<std::endl;
             }
             else if((s.get_TOPl(i)==0 && s.get_TOPl(pv)==0) || (s.get_TOPl(i)==7 && s.get_TOPl(pv)==7)) {
                 table_of_processes[i].push_back(24); //100c 100c
                 table_of_end_pos[i].push_back(pv);
+                std::cout<<"belin mea chi ghe n'processu: 2 "<<std::endl;
             }
             else if(s.get_TOPl(i)==8 && s.get_TOPl(pv)==8 && s.get_plane(i,1)!=s.get_plane(pv,1)) {
                 table_of_processes[i].push_back(10); //111 jump 111
                 table_of_end_pos[i].push_back(pv);
+                std::cout<<"belin mea chi ghe n'processu: 3 "<<std::endl;
             }
             else if(s.get_TOPl(i)==8 && s.get_TOPl(pv)==7) {
                 table_of_processes[i].push_back(19); //111 jump 100
                 table_of_end_pos[i].push_back(pv);
+                std::cout<<"belin mea chi ghe n'processu: 4 "<<std::endl;
             }
             else if(s.get_TOPl(i)==7 && s.get_TOPl(pv)==8) {
                 table_of_processes[i].push_back(15); //100 jump 111
                 table_of_end_pos[i].push_back(pv);
+                std::cout<<"belin mea chi ghe n'processu: 5 "<<std::endl;
             }
             else if(s.get_TOPl(i)==7 && s.get_TOPl(pv)==0) {
                 table_of_processes[i].push_back(28); //100b 100c
                 table_of_end_pos[i].push_back(pv);
+                std::cout<<"belin mea chi ghe n'processu: 6 "<<std::endl;
             }
             else if(s.get_TOPl(i)==8 && s.get_TOPl(pv)==1) {
                 table_of_processes[i].push_back(6); //111b 111c
                 table_of_end_pos[i].push_back(pv);
+                std::cout<<"belin mea chi ghe n'processu: 7 "<<std::endl;
             }
             else if(s.get_TOPl(i)==0 && s.get_TOPl(pv)==0) {
                 table_of_processes[i].push_back(31); //100c 100b
                 table_of_end_pos[i].push_back(pv);
+                std::cout<<"belin mea chi ghe n'processu: 8 "<<std::endl;
             }
         }
     }
 }
+
 //ci vuole una funzione che aggiorni quella qui sopra quando viene introdotto anche il secondo strato
 //sarà una funzione che gira solo su siti di bordo faccetta 100
 //function for update the atoms position
@@ -239,19 +251,23 @@ void metropolis::map_of_class_eraser(int c, int i, int j){
 //update how many atoms per class
 //the only advantage of having a table of processes is that you don't have to re-calculate the possible move for each atom
 void metropolis::classification(){
-    for(int i=0 ; i<interested_sites.size() ; i++){
-        std::vector<int> top = table_of_processes[i];
-        for(int j=0 ; j<top.size() ; j++){
-            int cl=top[j]; //process
-            int pv=table_of_end_pos[i][j]; //associated pv
-            if(!atoms[pv] && atoms[interested_sites[i]]){ //if pv empty && the site is full
+    for(int idx=0 ; idx<interested_sites.size() ; idx++){
+        int site = interested_sites[idx];
+        if(site < 0 || site >= table_of_processes.size()) continue;
+        std::vector<int>& top = table_of_processes[site];
+        for(int j=0 ; j< (int) top.size() ; j++){
+            int cl = top[j]; //process
+            int pv = table_of_end_pos[site][j]; //associated pv
+            if(pv < 0 || pv >= (int)nnn_atoms.size()) continue;
+            if(!atoms[pv] && atoms[site]){ //if pv empty && the site is full
+                std::cout<<"eja qua ci siamo entrati "<<std::endl;
                 int n = nnn_atoms[pv]; //nn of associated pv
-                table_of_processes[i][j] = cl + n;
+                table_of_processes[site][j] = cl + n;
                 atoms_per_class[cl+n]++;
-                std::vector<int> posit={i,j};
+                std::vector<int> posit={site,j};
                 map_class_processes[cl+n].push_back(posit);
-                atoms_per_class[cl]--;
-                map_of_class_eraser(cl,i,j);
+                if(n!=0) atoms_per_class[cl]--;
+                map_of_class_eraser(cl,site,j);
             }
         }
     }
@@ -264,10 +280,15 @@ void metropolis::probability_filler(){
     }
 }
 
+//everything ok
 void metropolis::deposition_func(){
-    int p = initial_pos(rng) * crd.sites_size();
+    int p = static_cast<int>(initial_pos(rng) * crd.sites_size());
+    if(p < 0) p = 0;
+    if(p >= crd.sites_size()) p = crd.sites_size() - 1;
     atoms[p] = true;
     pos=p;
+    output << "New atom: " << p << "    at time: "<< time <<std::endl;
+    std::cout << "New atom: " << p << "    at time: "<< time <<std::endl;
 }
 
 
@@ -276,10 +297,11 @@ void metropolis::time_prob_calc(){
     double r_time=dist_time(rng);
     double P_tot=0.0;
     double P_dep=crd.sites_size()*F;
-    for(int i=0 ; i<P.size() ; i++) P_tot+=P[i];
+    for(int i=0 ; i<P.size() ; i++) P_tot+=P[i]; 
     double P_diff=P_tot;
     P_tot+=P_dep;
-    time+= ( -(log(r_time)) / P_tot);
+    std::cout<<"prob dep "<<P_dep<<" prob diffusion "<<P_diff <<" prob total "<<P_tot<<std::endl;
+    time += ( -(log(r_time)) / P_tot);
 
     //choice of the class
     double random = dist_time(rng);
@@ -295,8 +317,10 @@ void metropolis::time_prob_calc(){
         //choice of the process
         std::uniform_int_distribution<> dist(0,atoms_per_class[chosen_class]-1);
         int atom = dist(rng);
+        next=map_class_processes[chosen_class][atom][1];
+        print_output();
         pos=map_class_processes[chosen_class][atom][0];
-        next=map_class_processes[chosen_class][atom][0];
+        std::cout<<"debug:                                                      "<<pos<<" "<<next<<std::endl;
     }else deposition_func();
 }
 
@@ -304,36 +328,43 @@ void metropolis::time_prob_calc(){
 void metropolis::print_output(){
     //pensare a come fare il file di output
     output<< process_name << "  from    " << pos <<"  to    "<< next <<std::endl;
+    std::cout<<process_name << "  from    " << pos <<"  to    "<< next <<std::endl;
 }
 
+//CHECK ALL 
 void metropolis::start_of_the_sim(){
+    output.open("MC_processes.txt");
     table_of_processes_filler(); //initialize
     atoms.resize(crd.get_N(), false);
     deposition_func();
     interested_sites_calc(false);
-    output.open("MC_processes.txt");
 }
 
 void metropolis::algorithm(){
     //compute all the possible processes
     while(time<total_time){
+        nnn_atoms.resize(atoms.size());
         nn_updater(deposition);
+        std::cout<<"bug3" << std::endl;
         classification();
         probability_filler();
         time_prob_calc();
-        if(deposition){ 
-            deposition_func;
-            crd.output_writer(output,crd.sites_size());
+        std::cout<<"bug4" << std::endl;
+        if(deposition){
+            deposition_func();
+            //crd.output_writer(output,crd.sites_size());
         }
         interested_sites_calc(deposition);
     }
 }
 
+//the PUBLIC function for the simulation, the only one that has to be called by the user
+//in addiction with something for outputs
 void metropolis::simulation(){
-    //questa deve richiamare tutte le funzioni sopra, deve essere L'UNICO comando che è usabile dall'esterno, ovvero pubblico 
-    //assieme ovviamente a quelli che generano i file di output
+    std::cout<<"bug0000" << std::endl;
     start_of_the_sim();
     algorithm();
+    std::cout<<"bug4" << std::endl;
     print_output();
 }
 
