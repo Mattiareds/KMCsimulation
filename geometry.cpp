@@ -2,34 +2,67 @@
 #include "metropolis.h"
 #include "coordinates.h"
 #include <iostream>
+#include <cmath>
 
 
 void geometry::make_planes(){
     //100 tipo 0
-    std::cout<<"Making planes with: "<<st->get_Ncut(0)<<" "<<st->get_Ncut(1)<<" "<<st->get_Ncut(2)<<std::endl;
-    planes.push_back({0,0,1,st->get_dpv()/(sqrt(2))*(st->get_spigolo()-1-st->get_Ncut(0))}); //piano sopra
-    planes.push_back({0,0,-1,st->get_dpv()/(sqrt(2))*(st->get_spigolo()-1-st->get_Ncut(1))}); //piano sotto
-    planes.push_back({1,0,0,st->get_dpv()/(sqrt(2))*(st->get_spigolo()-1-st->get_Ncut(2))});  
-    planes.push_back({-1,0,0,st->get_dpv()/(sqrt(2))*(st->get_spigolo()-1-st->get_Ncut(2))}); 
-    planes.push_back({0,1,0,st->get_dpv()/(sqrt(2))*(st->get_spigolo()-1-st->get_Ncut(2))});
-    planes.push_back({0,-1,0,st->get_dpv()/(sqrt(2))*(st->get_spigolo()-1-st->get_Ncut(2))});
-    //111 tipo 1
-    planes.push_back({1,1,1,st->get_dpv()/(sqrt(2))*(st->get_spigolo()-1)});  //piani grandi sopra
-    planes.push_back({-1,1,1,st->get_dpv()/(sqrt(2))*(st->get_spigolo()-1)});
-    planes.push_back({-1,-1,1,st->get_dpv()/(sqrt(2))*(st->get_spigolo()-1)});
-    planes.push_back({1,-1,1,st->get_dpv()/(sqrt(2))*(st->get_spigolo()-1)});
-    planes.push_back({-1,-1,-1,st->get_dpv()/(sqrt(2))*(st->get_spigolo()-1)}); //piani piccoli sotto
-    planes.push_back({-1,1,-1,st->get_dpv()/(sqrt(2))*(st->get_spigolo()-1)});
-    planes.push_back({1,-1,-1,st->get_dpv()/(sqrt(2))*(st->get_spigolo()-1)});
-    planes.push_back({1,1,-1,st->get_dpv()/(sqrt(2))*(st->get_spigolo()-1)});
+    //std::cout<<"Making planes with: "<<st->get_Ncut(0)<<" "<<st->get_Ncut(1)<<" "<<st->get_Ncut(2)<<std::endl;
+    const int num_planes = 14;
+    const int components = 4; // x, y, z, offset
+
+    planes = new double*[num_planes];
+    for (int i = 0; i < num_planes; ++i) {
+        planes[i] = new double[components];
+    }
+    
+    double factor = st->get_dpv() / std::sqrt(2.0);
+    double spigolo_minus_1 = st->get_spigolo() - 1.0;
+
+    planes[0][0] = 0.0;  planes[0][1] = 0.0;  planes[0][2] = 1.0;
+    planes[0][3] = factor * (spigolo_minus_1 - st->get_Ncut(0));
+
+    // Plane 1: Piano sotto
+    planes[1][0] = 0.0;  planes[1][1] = 0.0;  planes[1][2] = -1.0;
+    planes[1][3] = factor * (spigolo_minus_1 - st->get_Ncut(1));
+
+    // Planes 2-5: Lateral planes (X and Y axes)
+    // Indices: 2(+x), 3(-x), 4(+y), 5(-y)
+    double ncut2_offset = factor * (spigolo_minus_1 - st->get_Ncut(2));
+    
+    planes[2][0] = 1.0;  planes[2][1] = 0.0;  planes[2][2] = 0.0;  planes[2][3] = ncut2_offset;
+    planes[3][0] = -1.0; planes[3][1] = 0.0;  planes[3][2] = 0.0;  planes[3][3] = ncut2_offset;
+    planes[4][0] = 0.0;  planes[4][1] = 1.0;  planes[4][2] = 0.0;  planes[4][3] = ncut2_offset;
+    planes[5][0] = 0.0;  planes[5][1] = -1.0; planes[5][2] = 0.0;  planes[5][3] = ncut2_offset;
+
+    // Planes 6-13: The "111" family (Diagonals)
+    double diag_offset = factor * spigolo_minus_1;
+    double signs[8][3] = {
+        {1,1,1}, {-1,1,1}, {-1,-1,1}, {1,-1,1},   // Upper diagonals
+        {-1,-1,-1}, {-1,1,-1}, {1,-1,-1}, {1,1,-1} // Lower diagonals
+    };
+
+    for (int i = 0; i < 8; ++i) {
+        int idx = i + 6; // Start from index 6
+        planes[idx][0] = signs[i][0];
+        planes[idx][1] = signs[i][1];
+        planes[idx][2] = signs[i][2];
+        planes[idx][3] = diag_offset;
+    }
 }
 
 
 bool geometry::test_piano(int i,int j){
-    if(abs(st->site_x(i)*planes[j][0] + st->site_y(i)*planes[j][1] + st->site_z(i)*planes[j][2] - planes[j][3]) < 0.05){
-        return true;
-    }
-    return false;
+    if(!st) return false;
+    // compute signed value of plane equation
+    double val = st->site_x(i)*planes[j][0] + st->site_y(i)*planes[j][1] + st->site_z(i)*planes[j][2] - planes[j][3];
+    double nx = planes[j][0];
+    double ny = planes[j][1];
+    double nz = planes[j][2];
+    double norm = std::sqrt(nx*nx + ny*ny + nz*nz);
+    double dist = std::fabs(val) / (norm > 0.0 ? norm : 1.0);
+    const double eps = 1e-3; // distance tolerance
+    return dist < eps;
 }
 
 int plane_type(int i){
@@ -51,7 +84,7 @@ void geometry::site_characterisation(){
     type_of_plane.resize(st->sites_size(), 0);
     std::vector<int> counter(info_plane_sites.size(), 0);
     for(int i=0; i<st->sites_size(); i++){
-        for(int j=0;j<planes.size();j++){
+        for(int j=0; j<14 ; j++){
             if(test_piano(i,j)==true) {
                 if(counter[i]==0){
                     info_plane_sites[i][1] = (double) j;
@@ -59,9 +92,9 @@ void geometry::site_characterisation(){
                 }
                 else if(counter[i]==1){
                     info_plane_sites[i][2]=(double) j;
-                    if((plane_type(j) + type_of_plane[i])== 2) type_of_plane[i] = 2; //two 111 
-                    else if((plane_type(j) && type_of_plane[i]) ==1) type_of_plane[i] = 3; //one 111 and one 100
-                    else if((plane_type(j) && type_of_plane[i]) ==0) type_of_plane[i] = 4; //two 100
+                    if((plane_type(j) + type_of_plane[i]) == 2){ type_of_plane[i] = 2; }//two 111 
+                    else if((plane_type(j) && type_of_plane[i]) ==1){ type_of_plane[i] = 3; }//one 111 and one 100
+                    else if((plane_type(j) && type_of_plane[i]) ==0){ type_of_plane[i] = 4;}//two 100
                 }
                 else if(counter[i]==2){
                     info_plane_sites[i][3]=(double) j;
@@ -81,17 +114,29 @@ void geometry::site_characterisation(){
 
 //test if the site of the lattice are on the planes of the base (= are border sites)
 void geometry::test_border(geometry& core){
+    if(!st){
+        std::cerr << "Warning: geometry::st not set in test_border\n";
+        return;
+    }
+    const double eps = 1e-3; // distance tolerance
     for(size_t i=0 ; i<type_of_plane.size() ; i++){
-      //mi restringo ai siti che stanno su un solo piano
-      if(type_of_plane[i] == 0 || type_of_plane[i] == 1){
-    	    for(size_t j=0 ; j<core.planes.size() ; j++){
-    	    //testo se appartengo ai piani del più piccolo, e nel caso (ne basta uno) ritorno 1, vale sia per 111 che per 100
-    	        if((abs(st->site_x(i)*core.planes[j][0] + st->site_y(i)*core.planes[j][1] + st->site_z(i)*core.planes[j][2] - core.planes[j][3])<0.10)){
-                    type_of_plane[i] = type_of_plane[i] + 7; //7if 100b 8 if 111b
-    	        }
-    	    }
+      //sites only on one plane
+      if(type_of_plane[i] < 2){
+            //for the planes of the core
+            for(size_t j=0 ; j<14 ; j++){
+                double val = st->site_x(i)*core.planes[j][0] + st->site_y(i)*core.planes[j][1] + st->site_z(i)*core.planes[j][2] - core.planes[j][3];
+                double nx = core.planes[j][0];
+                double ny = core.planes[j][1];
+                double nz = core.planes[j][2];
+                double norm = std::sqrt(nx*nx + ny*ny + nz*nz);
+                double dist = std::fabs(val) / (norm > 0.0 ? norm : 1.0);
+                if(dist < eps){
+                    type_of_plane[i] = type_of_plane[i] + 7; //7 if 100b, 8 if 111b
+                    break; // one plane match is enough
+                }
+            }
         }
-    }   
+    }
 }
 
 //initialize a table of pv, that is going to be updated when we add higher sites
@@ -114,13 +159,57 @@ void geometry::initialize_external_nn(coordinates& core){
     }
 }
 
+// bool geometry::is_same_plane(int site_i, int site_f){
+//     auto planes_i=info_plane_sites[site_i];
+//     auto planes_f=info_plane_sites[site_f];
+//     bool same_p=false;
+//     for(size_t i=1 ; i<planes_i.size() ; i++){
+//         for(size_t j=1 ; j<planes_f.size() ; j++){
+//             if(planes_i[i]==planes_f[j]) { same_p=true; return same_p; }
+//         }
+//     }
+//     return same_p;
+// }
+
 //implementare una funzione che sostituisca tutti i pv di edge con il pv più vicino della faccetta adiacente
 void geometry::pv_substitution(){
-    
+    auto table_copy=table_of_nn;
+    //run on sites
+    for (size_t i=0 ; i<table_of_nn.size() ; i++){
+        //if my site is not on one edge
+        if(type_of_plane[i] < 2){
+            //get the nn of my site
+            for (size_t j=0 ; j< table_of_nn[i].size(); j++){
+                int possible_edge_site=table_of_nn[i][j];
+                //my site is on the edge?
+                if(type_of_plane[possible_edge_site] > 1){
+                    //run on all the nearest neighbours of the site that is on the edge
+                    for(size_t k=0 ; k< table_of_nn[possible_edge_site].size(); k++){
+                        //this is the nearest neighbour of the nearest neighbour of my site
+                        int nn_of_the_nn = table_of_nn[possible_edge_site][k];
+                        //if is not on the edge, it means that it has only one plane
+                        if(type_of_plane[nn_of_the_nn]<2){
+                            //the first one that is good and that is not on the edge will be my new nn
+                            if(info_plane_sites[i][1]!=info_plane_sites[nn_of_the_nn][1]) {
+                                //std::cout<<"site: "<<i<<" SHELL substitution: "<<possible_edge_site<<" "<<table_of_nn[i][j]<< " with "<< nn_of_the_nn<<std::endl;
+                                table_of_nn[i][j]=nn_of_the_nn; 
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    //for (int i=0 ; i<table_of_nn.size(); i++){
+    //    std::cout<<i<<" con pv:       ";
+    //    for (int j: table_of_nn[i]) std::cout<<j<<" ";
+    //    std::cout<<std::endl;
+    //}
+
 }
 
 void geometry::starter(){
-    planes.resize(0,std::vector<double>(0,0.0));
     make_planes();
     site_characterisation();
     initialize_nn();

@@ -19,13 +19,16 @@ class metropolis{
     std::vector<bool> atoms;
     std::vector<int> interested_sites; //sites interested in the last iteration
     std::vector<int> nnn_atoms; //number of nn for each atom
-    std::vector<int> atoms_per_class; // sarà ridimensionato dopo aver letto n_class
+    int movements_per_class[100]; // sarà ridimensionato dopo aver letto n_class
     std::vector<std::vector<int>> table_of_processes; //map initial site -> type of possible processes
     std::vector<std::vector<int>> table_of_end_pos; //map initial site -> possible end sites 
+    std::vector<std::vector<int>> table_of_initial_pos; //map finale site -> initial site
     std::vector<double> P; // sarà ridimensionato dopo aver letto n_class
-    std::vector<std::vector<std::vector<int>>>  map_class_processes;//map class -> process
+    //std::vector<std::vector<std::vector<int>>>  map_class_processes;//map class -> process
+    int map_class_processes[100][1000][2];
 
     std::vector<double> barriere;
+    int n_deposited;
     double E_b; 
     double Kb=0.00008617;
     int mc_step;
@@ -43,7 +46,7 @@ class metropolis{
     std::string process_name;
     std::ofstream output;
 
-    int* classes = new int[11]{0, 6, 10, 15, 19, 24, 28, 31, 36, 41, 44}; //classes
+    int classes [11]={0, 6, 10, 15, 19, 24, 28, 31, 36, 41, 44}; //classes
     
     void interested_sites_calc(bool diff); 
     void nn_updater(bool b);
@@ -56,9 +59,14 @@ class metropolis{
     void start_of_the_sim();
     void time_prob_calc();
     void map_of_class_eraser(int c, int i, int j);
+    void map_of_class_position_eraser(int i); 
+    void map_of_class_next_eraser(int i); 
+    void map_of_class_filler(int c, int i , int j);
+    int get_MCP_size(int c);
     void deposition_func();
     void print_output();
-    int * barrier_chooser(int cl);
+    void barrier_chooser(int cl, int &i, int& j);
+    void shifter(int c, int ind, int tg);
 
     public:
     //builder

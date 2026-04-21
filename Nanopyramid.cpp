@@ -15,7 +15,7 @@ int main(){
     geometry g_shell;
     geometry g_high_shell;
 
-    metropolis alg(core, g_core, g_shell);
+    metropolis alg(shell, g_shell, g_shell); //l'ultima entrata sarebbe g_high_shell ma non la ho
 
     //set the core and the shell
     g_core.set(core,alg);
@@ -42,9 +42,12 @@ int main(){
     g_core.starter();
     g_shell.starter();
     
-    std::cout<<"e fin qui..."<<std::endl;
+    g_shell.pv_substitution();
+    g_shell.test_border(g_core);
+   
+    //simulation
     alg.simulation();
 
 }
 
-//compiler: g++ geometry.cpp coordinates.cpp Nanopyramid.cpp -o Nanopyramid
+//compiler: g++ geometry.cpp coordinates.cpp metropolis.cpp Nanopyramid.cpp -o Nanopyramid

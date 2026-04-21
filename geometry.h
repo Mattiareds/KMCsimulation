@@ -11,13 +11,14 @@ class geometry{
     private:
     coordinates* st = nullptr;
     metropolis* mt = nullptr;
-    std::vector<std::vector<double>> planes;
+    double** planes;
     std::vector<std::vector<int>> info_plane_sites; //how many and in which planes is each site
     std::vector<int> type_of_plane; //0=100c 1=111c 2=two111 3=one111one100 4=two100 5=two111one100 6=two111one100 7=100b 8=111b
     std::vector<std::vector<int>> table_of_nn;
     void make_planes();
     void site_characterisation();
     void initialize_nn();
+    // bool is_same_plane(int site_i, int site_f);
 
     public:
     
