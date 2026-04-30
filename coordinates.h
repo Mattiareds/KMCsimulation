@@ -12,7 +12,7 @@ class coordinates{
 
     
     int N; //number of coordinates
-    int M; //number of sites of the upper level
+    //int M; //number of sites of the upper level
     double d_pv;
     int spigolo;
     int* n_cut = new int[4];

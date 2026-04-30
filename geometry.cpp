@@ -3,12 +3,13 @@
 #include "coordinates.h"
 #include <iostream>
 #include <cmath>
+#include <vector>
 
 
 void geometry::make_planes(){
     //100 tipo 0
     //std::cout<<"Making planes with: "<<st->get_Ncut(0)<<" "<<st->get_Ncut(1)<<" "<<st->get_Ncut(2)<<std::endl;
-    const int num_planes = 14;
+    const int num_planes = 15;
     const int components = 4; // x, y, z, offset
 
     planes = new double*[num_planes];
@@ -25,6 +26,10 @@ void geometry::make_planes(){
     // Plane 1: Piano sotto
     planes[1][0] = 0.0;  planes[1][1] = 0.0;  planes[1][2] = -1.0;
     planes[1][3] = factor * (spigolo_minus_1 - st->get_Ncut(1));
+
+    //Plane 14: Secondo strato
+    planes[14][0] = 0.0;  planes[14][1] = 0.0;  planes[14][2] = -1.0;
+    planes[14][3] = factor * (st->get_spigolo() - st->get_Ncut(1) );
 
     // Planes 2-5: Lateral planes (X and Y axes)
     // Indices: 2(+x), 3(-x), 4(+y), 5(-y)
@@ -67,11 +72,14 @@ bool geometry::test_piano(int i,int j){
 
 int plane_type(int i){
     int t;
-    if(i<6 || i==14){ //100
+    if(i<6){ //100
         t=0;
     }
-    if(i>5 && i<15){ //111
+    if(i>5 && i<14){ //111
         t=1;
+    }
+    if(i==14){
+        t=i;
     }
     return t;
 }
@@ -84,11 +92,14 @@ void geometry::site_characterisation(){
     type_of_plane.resize(st->sites_size(), 0);
     std::vector<int> counter(info_plane_sites.size(), 0);
     for(int i=0; i<st->sites_size(); i++){
-        for(int j=0; j<14 ; j++){
+        for(int j=0; j<15 ; j++){
             if(test_piano(i,j)==true) {
                 if(counter[i]==0){
                     info_plane_sites[i][1] = (double) j;
                     type_of_plane[i] = plane_type(j);
+                    if(plane_type(j)==14){
+                        upper_sites.push_back(i);
+                    }
                 }
                 else if(counter[i]==1){
                     info_plane_sites[i][2]=(double) j;
@@ -119,9 +130,10 @@ void geometry::test_border(geometry& core){
         return;
     }
     const double eps = 1e-3; // distance tolerance
-    for(size_t i=0 ; i<type_of_plane.size() ; i++){
+    for(size_t i=0 ; i<type_of_plane.size() ; i++){ //run on which is the plane for each site
+        int info = type_of_plane[i];
       //sites only on one plane
-      if(type_of_plane[i] < 2){
+      if(info < 2 || info==14){
             //for the planes of the core
             for(size_t j=0 ; j<14 ; j++){
                 double val = st->site_x(i)*core.planes[j][0] + st->site_y(i)*core.planes[j][1] + st->site_z(i)*core.planes[j][2] - core.planes[j][3];
@@ -131,7 +143,18 @@ void geometry::test_border(geometry& core){
                 double norm = std::sqrt(nx*nx + ny*ny + nz*nz);
                 double dist = std::fabs(val) / (norm > 0.0 ? norm : 1.0);
                 if(dist < eps){
-                    type_of_plane[i] = type_of_plane[i] + 7; //7 if 100b, 8 if 111b
+                    bool has_different_nn = false;
+                    for(int nn : table_of_nn[i]){
+                        if(type_of_plane[nn] != type_of_plane[i]){
+                            has_different_nn = true; break;
+                        }
+                    }
+                    if(!has_different_nn) break; // è interno, non border
+                    if(info==14){
+                        type_of_plane[i] = 15;
+                    }else{
+                        type_of_plane[i] = type_of_plane[i] + 7; //7 if 100b, 8 if 111b
+                    }
                     break; // one plane match is enough
                 }
             }
@@ -144,20 +167,13 @@ void geometry::initialize_nn(){
     table_of_nn.resize(st->sites_size(),std::vector<int>(0,0));
     for(int j=0;j<st->sites_size();j++){
         for(int i=0;i<st->sites_size();i++){
-            if(i!=j && (sqrt( pow((st->site_x(j) - st->site_x(i)),2) + pow((st->site_y(j) - st->site_y(i)),2) + pow((st->site_z(j)-st->site_z(i)),2) ) - st->get_dpv() ) < 0.08 ) table_of_nn[j].push_back(i); 
+            if(i!=j && (sqrt( pow((st->site_x(j) - st->site_x(i)),2) + pow((st->site_y(j) - st->site_y(i)),2) + pow((st->site_z(j)-st->site_z(i)),2) ) - st->get_dpv() ) < 0.08 ){
+                table_of_nn[j].push_back(i); 
+            } 
         }
     }
 }
 
-//initialize a table of pv for higher sites
-void geometry::initialize_external_nn(coordinates& core){
-    table_of_nn.resize(st->sites_size(),std::vector<int>(0,0));
-    for(int j=0;j<st->sites_size();j++){
-        for(int i=0;i<core.sites_size();i++){
-            if(i!=j) if((sqrt( pow((st->site_x(j) - core.site_x(i)),2) + pow((st->site_y(j) - core.site_y(i)),2) + pow((st->site_z(j)-core.site_z(i)),2) ) - st->get_dpv() ) < 0.08 ) table_of_nn[j].push_back(i);
-        }
-    }
-}
 
 // bool geometry::is_same_plane(int site_i, int site_f){
 //     auto planes_i=info_plane_sites[site_i];
@@ -176,6 +192,7 @@ void geometry::pv_substitution(){
     auto table_copy=table_of_nn;
     //run on sites
     for (size_t i=0 ; i<table_of_nn.size() ; i++){
+        edge_map.resize(st->sites_size(),std::vector<int>(table_of_nn[i].size(),-1));
         //if my site is not on one edge
         if(type_of_plane[i] < 2){
             //get the nn of my site
@@ -192,7 +209,8 @@ void geometry::pv_substitution(){
                             //the first one that is good and that is not on the edge will be my new nn
                             if(info_plane_sites[i][1]!=info_plane_sites[nn_of_the_nn][1]) {
                                 //std::cout<<"site: "<<i<<" SHELL substitution: "<<possible_edge_site<<" "<<table_of_nn[i][j]<< " with "<< nn_of_the_nn<<std::endl;
-                                table_of_nn[i][j]=nn_of_the_nn; 
+                                edge_map[i][j] = possible_edge_site;
+                                table_of_nn[i][j] = nn_of_the_nn;
                                 break;
                             }
                         }
@@ -206,11 +224,13 @@ void geometry::pv_substitution(){
     //    for (int j: table_of_nn[i]) std::cout<<j<<" ";
     //    std::cout<<std::endl;
     //}
-
 }
+
 
 void geometry::starter(){
     make_planes();
     site_characterisation();
     initialize_nn();
 }
+
+
