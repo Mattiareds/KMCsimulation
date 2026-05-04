@@ -3,3 +3,5 @@ debug.out
 *.out
 *.o
 Nanopyramid
+.DS_Store
+.gitignore
