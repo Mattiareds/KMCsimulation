@@ -1,6 +1,4 @@
 #include "coordinates.h"
-#include <algorithm>
-#include <iomanip>
 #include <limits>
 #include <iostream>
 
@@ -29,10 +27,21 @@ void coordinates::settings_reader(std::ifstream& ifile){
 }
 
 //output of coordinates
+void coordinates::output_writer_partial(std::ofstream& ofile, int n_pos, std::vector<bool> atoms){
+    for(int i=0;i<siti.size();i++){
+        if(atoms[i]){
+            ofile<<specie_chimica[i]<<" "<<siti[i][0]<<" "<<siti[i][1]<<" "<<siti[i][2]<<std::endl;
+        }
+    }
+}
+
+//output of coordinates
 void coordinates::output_writer(std::ofstream& ofile, int n_pos){
     ofile<<n_pos<<std::endl;
     ofile << second_line << std::endl;
     for(int i=0;i<siti.size();i++){
-        ofile<<specie_chimica[i]<<" "<<siti[i][0]<<" "<<siti[i][1]<<" "<<siti[i][2]<<std::endl;
+            ofile<<specie_chimica[i]<<" "<<siti[i][0]<<" "<<siti[i][1]<<" "<<siti[i][2]<<std::endl;
     }
 }
+
+

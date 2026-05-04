@@ -10,6 +10,7 @@
 class metropolis{
     private:
     coordinates& crd;
+    coordinates& c_crd;
     geometry& s; //sites
     std::random_device rd;
     std::mt19937 rng;
@@ -29,17 +30,17 @@ class metropolis{
     //std::vector<std::vector<std::vector<int>>>  map_class_processes;//map class -> process
     int map_class_processes[100][1000][2];
 
-    std::vector<double> barriere;
+    std::vector<float> barriere;
     static constexpr double Kb = 8.617333262e-5;
     int n_deposited;
-    double E_b;
+    float E_b;
     int mc_step;
-    double temperatura;
-    double nu_0;
+    float temperatura;
+    float nu_0;
     double F; //deposition rate
-    double filling;
+    float filling;
     int n_class;
-    double total_time;
+    float total_time;
     int pos; //current pos
     int next;
     double time=0.0;
@@ -67,6 +68,7 @@ class metropolis{
     int get_MCP_size(int c);
     void deposition_func();
     void print_output();
+    void print_configuration();
     void print_final_output();
     void barrier_chooser(int cl, int &i, int& j);
     void shifter(int c, int ind, int tg);
@@ -79,8 +81,8 @@ class metropolis{
 
     public:
     //builder
-    metropolis(coordinates& structure, geometry& sites)
-        : crd(structure), s(sites),
+    metropolis(coordinates& structure, coordinates& core, geometry& sites)
+        : crd(structure), c_crd(core), s(sites),
           rng(rd()), initial_pos(0.0,1.0) , dist_time(0.0,1.0)
     { 
     }

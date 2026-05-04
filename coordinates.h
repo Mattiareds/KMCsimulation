@@ -13,7 +13,7 @@ class coordinates{
     
     int N; //number of coordinates
     //int M; //number of sites of the upper level
-    double d_pv;
+    float d_pv;
     int spigolo;
     int* n_cut = new int[4];
     
@@ -24,6 +24,7 @@ class coordinates{
     //read settings file
     void settings_reader(std::ifstream& ifile);
     //set the output file 
+    void output_writer_partial(std::ofstream& ofile, int n_pos, std::vector<bool> atoms);
     void output_writer(std::ofstream& ofile, int n_pos);
 
     //setters and getters
@@ -45,7 +46,7 @@ class coordinates{
         if(indx < 4) return n_cut[indx];
         else return 0;
     }
-    const double get_dpv() const {return d_pv;}
+    const float get_dpv() const {return d_pv;}
 
 
 };

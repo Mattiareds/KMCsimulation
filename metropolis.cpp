@@ -2,26 +2,10 @@
 #include "geometry.h"
 #include "metropolis.h"
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <unordered_set>
 
-
-/*per il calcolo delle probabilità:
-1) si ha un vettore con tutte le probabilità associate ad ogni sito, a prescindere dall'occupazione o meno da parte di un atomo (probabilità di base, no pv)
-2) chiaramente se il sito non è occupato non si tiene conto di quelle probabilità
-3) si ha un altro vettore che ha al suo interno il numero di pv per ogni sito
-4) quando si effettua una mossa si vanno a ricalcolare il numero dei pv solo dei siti pv coinvolti nella mossa (quindi tutti i pv del sito di partenza e del sito di arrivo, a parte i siti
-coinvolti che non avranno nessun tipo di modifica )
-5) quando si calcola la probailità finale, si tiene conto del numero dei pv che sono in quel sito
-6) la probabilità va divisa per tipo di processo coinvolto!!! quindi una per ogni barriera!!!, quindi quando si effettua una mossa bisogna ricalcolare la probabilità complessiva di tutti
-i processi di quel tipo
-7) uno sa che processo avviene, questo andr� a variare la probabilità di alcuni processi generali. se io conosco, per ogni atomo, che tipo di processi mi fa, mi vado ad aggiungere/togliere
-probabilità da quelle tipologie di processo, andando a ridurre drasticamente il tempo di calcolo di quel processi. La funzione per calcolare i nn la ho già, mi serve un vettore che mi dica
-per ogni tipo di processo quali sono i siti, così se un sito cambia vado a calcolare solo la total probability di quel sito (moltiplicata per il riempimento)
-8)assumendo che la probabilità sia calcolata, ad una mossa che modifica il numero di pv di un atomo vado a ridurre/aumentare la probabilità totale di quel tipo di processi in base alla differenza
-tra i primi vicini di prima e di ora
-
-*/
 
 void metropolis::file_reader(std::ifstream& ifile){
     if(ifile){
@@ -91,7 +75,6 @@ void metropolis::nn_updater(bool dep){
         for(int i=0 ; i< nn_of_nn.size() ; i++){
             int nearest=nn_of_nn[i];
             int edges= edge[i];
-            //if( (s.get_plane(site, 1)==s.get_plane(nearest,1)) || ((s.get_plane(site, 1)==14||s.get_plane(site, 1)==15) || (s.get_plane(nearest, 1)==14 || s.get_plane(nearest, 1)==15) ) || (s.get_TOPl(site)==10 || s.get_TOPl(nearest)==10 ) ){
                 if(atoms[nearest] && (edges < 0)){ //if lt 0 not changed: same facet
                     if(nearest == pos && !pos_checked){ 
                         pos_checked = true;
@@ -109,7 +92,6 @@ void metropolis::nn_updater(bool dep){
                     }
                     count++;
                 }
-            //}
         }
         nnn_atoms[site] = count;
     }
@@ -806,12 +788,21 @@ void metropolis::print_output(){
     //debug_file<<process_name << " PROCESS THAT HAPPENED: from    " << pos <<"  to    "<< next <<std::endl;
 }
 
-void metropolis::print_final_output(){
-    output<<"Final configuration obtained after "<<time<<" seconds; "<<mc_step<<" Monte Carlo steps"<<std::endl;
-    crd.output_writer(output,crd.sites_size());
+void metropolis::print_configuration(){
+    std::string str1 = std::to_string(n_deposited);
+    std::string str2 = std::to_string(time*pow(10,12));
+    int numZeros = 4 - str1.length();
+    int numZeros2 = 15 - str2.length();
+    str1.insert(0, numZeros, '0');
+    str2.insert(0,numZeros2,'0');
+    std::string fileName = "occ"+str1+"t"+str2+".txt";
+    std::ofstream intermed_config;
+    intermed_config.open(fileName);
+    c_crd.output_writer(intermed_config, c_crd.sites_size()+n_deposited);
+    crd.output_writer_partial(intermed_config, n_deposited, atoms);
+    output<<"Printed configuration with: "<<n_deposited<<" occupated sites, at time: "<<time*pow(10,12)<<" picoseconds, = "<<time<<" seconds "<<std::endl;
 }
 
-//CHECK ALL
 void metropolis::start_of_the_sim(){
     output.open("MC_processes.txt");
     //debug_file.open("debug.out");
@@ -836,7 +827,7 @@ void metropolis::algorithm(){
         time_prob_calc();
         if(deposition){
             deposition_func();
-            crd.output_writer(output,crd.sites_size());
+            print_configuration();
         } else{
             atoms[pos] = false;
             atoms[next]= true;
@@ -876,4 +867,5 @@ void metropolis::simulation(){
     start_of_the_sim();
     algorithm();
     print_output();
+    print_configuration();
 }

@@ -13,7 +13,7 @@ int main(){
     geometry g_core;
     geometry g_shell;
 
-    metropolis alg(shell, g_shell); 
+    metropolis alg(shell,core, g_shell); 
 
     //set the core and the shell
     g_core.set(core,alg);
@@ -42,8 +42,6 @@ int main(){
     g_shell.pv_substitution();
     g_shell.test_border(g_core);
    
-
-
     //simulation
     alg.simulation();
 }
