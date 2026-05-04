@@ -1,4 +1,5 @@
 *.out
-*.odebug.out
+debug.out
 *.out
-Nanopyramid.o coordinates.o geometry.o metropolis.o
+*.o
+Nanopyramid
