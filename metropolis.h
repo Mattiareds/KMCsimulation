@@ -73,6 +73,7 @@ class metropolis{
     void print_configuration();
     void print_final_output();
     void barrier_chooser(int cl, int &i, int& j);
+    void get_process_name(int cl);
     void shifter(int c, int ind, int tg);
     bool is_deactivated(int i);
     bool is_border(int i);

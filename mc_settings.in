@@ -13,10 +13,10 @@
 mc_step
 number_of_barriers
 111C-111C (DFT) 100C-100C (DFT)  111<->111 (DFT)  111->100 (DFT)   100->111 (DFT)    100B-100C (DFT)  111B-111C (DFT)  100C-100B (DFT) push (DFT)  111misto->100Au (DFT)  kink
-E_b
-F
-filling 
-temperature
-prefactor TST
+E_b (eV)
+F (atoms/s) per site
+filling
+temperature (K)
+prefactor TST (1/s)
 n diffusion classes
-total time 
+total time (s)

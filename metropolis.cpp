@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <new>
 #include <unordered_set>
 
 
@@ -466,81 +467,130 @@ void metropolis::barrier_chooser(int cl, int &bar_id , int &neighbours ){
     {
         bar[0] = 6;
         bar[1] = cl - 6;
-        num=std::to_string(bar[1]);
-        process_name = "111border to 111center same facet with: " + num + " nearest neighbors";
     }
     else if (cl >= 10 && cl <= 14)
     {
         bar[0] = 2;
         bar[1] = cl - 10;
-        num=std::to_string(bar[1]);
-        process_name = "111border to 111border different facets with: " + num + " nearest neighbors";
     }
     else if (cl >= 15 && cl <= 19)
     {
         bar[0] = 4;
         bar[1] = cl - 15;
-        num=std::to_string(bar[1]);
-        process_name = "100 to 111 with: " + num + " nearest neighbors";
     }
     else if (cl >= 20 && cl <= 24)
     {
         bar[0] = 3;
         bar[1] = cl - 20;
-        num=std::to_string(bar[1]);
-        process_name = "111 to 100 with: " + num + " nearest neighbors";
     }
     else if (cl >= 25 && cl <= 32)
     {
         bar[0] = 1;
         bar[1] = cl - 25;
-        num=std::to_string(bar[1]);
-        process_name = "100center to 100center same facet with: " + num + " nearest neighbors";
     }
     else if (cl >= 33 && cl <= 39)
     {
         bar[0] = 5;
         bar[1] = cl - 33;
-        num=std::to_string(bar[1]);
-        process_name = "100border to 100center same facet with: " + num + " nearest neighbors";
     }
     else if (cl >= 40 && cl <= 46)
     {
         bar[0] = 7;
         bar[1] = cl - 40;
-        num=std::to_string(bar[1]);
-        process_name = "100center to 100border with: " + num + " nearest neighbors";
     }
     else if (cl >= 47 && cl <= 51)
     {
         bar[0] = 8;
         bar[1] = cl - 47;
-        num=std::to_string(bar[1]);
-        process_name = "111border-push-100  with: " + num + " nearest neighbors";
     }
     else if (cl >= 52 && cl <= 55)
     {
         bar[0] = 9;
         bar[1] = cl - 52;
-        num=std::to_string(bar[1]);
-        process_name = "111 mixed to 100 double with: " + num + " nearest neighbors";
     }
     else if (cl >= 56)
     {
         bar[0] = 10;
         bar[1] = cl - 56;
-        num=std::to_string(bar[1]);
-        process_name = "kink: 100shell to 100core with: " + num + " nearest neighbors";
     }
     else
     {
         bar[0] = 0;
         bar[1] = cl;
-        num=std::to_string(bar[1]);
-        process_name = "111center to 111center same facet with: " + num + " nearest neighbors";
     }
     bar_id=bar[0];
     neighbours=bar[1];
+}
+void metropolis::get_process_name(int cl){
+    std::string num;
+    int nn;
+
+    if (cl >= 6 && cl <= 9)
+    {
+        nn = cl - 6;
+        num=std::to_string(nn);
+        process_name = "111border to 111center same facet with: " + num + " nearest neighbors";
+    }
+    else if (cl >= 10 && cl <= 14)
+    {
+        nn = cl - 10;
+        num=std::to_string(nn);
+        process_name = "111border to 111border different facets with: " + num + " nearest neighbors";
+    }
+    else if (cl >= 15 && cl <= 19)
+    {
+        nn = cl - 15;
+        num=std::to_string(nn);
+        process_name = "100 to 111 with: " + num + " nearest neighbors";
+    }
+    else if (cl >= 20 && cl <= 24)
+    {
+        nn = cl - 20;
+        num=std::to_string(nn);
+        process_name = "111 to 100 with: " + num + " nearest neighbors";
+    }
+    else if (cl >= 25 && cl <= 32)
+    {
+        nn = cl - 25;
+        num=std::to_string(nn);
+        process_name = "100center to 100center same facet with: " + num + " nearest neighbors";
+    }
+    else if (cl >= 33 && cl <= 39)
+    {
+        nn = cl - 33;
+        num=std::to_string(nn);
+        process_name = "100border to 100center same facet with: " + num + " nearest neighbors";
+    }
+    else if (cl >= 40 && cl <= 46)
+    {
+        nn = cl - 40;
+        num=std::to_string(nn);
+        process_name = "100center to 100border with: " + num + " nearest neighbors";
+    }
+    else if (cl >= 47 && cl <= 51)
+    {
+        nn = cl - 47;
+        num=std::to_string(nn);
+        process_name = "111border-push-100  with: " + num + " nearest neighbors";
+    }
+    else if (cl >= 52 && cl <= 55)
+    {
+        nn = cl - 52;
+        num=std::to_string(nn);
+        process_name = "111 mixed to 100 double with: " + num + " nearest neighbors";
+    }
+    else if (cl >= 56)
+    {
+        nn = cl - 56;
+        num=std::to_string(nn);
+        process_name = "kink: 100shell to 100core with: " + num + " nearest neighbors";
+    }
+    else
+    {
+        nn = cl;
+        num=std::to_string(nn);
+        process_name = "111center to 111center same facet with: " + num + " nearest neighbors";
+    }
 }
 
 
@@ -775,6 +825,7 @@ void metropolis::time_prob_calc(){
         const auto& mv = map_class_processes[chosen_class][movement];
         next = mv[1];
         pos = mv[0];
+        get_process_name(chosen_class);
         print_output();
         //std::cout<<"ora pos "<<pos<<" mentre next "<< next<<std::endl;
         //remove the already executed process to the list of possible processes 
