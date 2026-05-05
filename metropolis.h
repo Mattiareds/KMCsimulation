@@ -1,6 +1,8 @@
 #include <vector>
 #include <fstream>
 #include <random>
+#include <array>
+#include <tuple>
 
 
 #ifndef METROPOLIS_H
