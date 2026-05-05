@@ -36,9 +36,9 @@ void coordinates::output_writer_partial(std::ofstream& ofile, int n_pos, std::ve
 }
 
 //output of coordinates
-void coordinates::output_writer(std::ofstream& ofile, int n_pos){
+void coordinates::output_writer(std::ofstream& ofile, int n_pos, double time){
     ofile<<n_pos<<std::endl;
-    ofile << second_line << std::endl;
+    ofile << " time of the simulation: " << time << std::endl;
     for(int i=0;i<siti.size();i++){
             ofile<<specie_chimica[i]<<" "<<siti[i][0]<<" "<<siti[i][1]<<" "<<siti[i][2]<<std::endl;
     }

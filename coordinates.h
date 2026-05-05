@@ -25,7 +25,7 @@ class coordinates{
     void settings_reader(std::ifstream& ifile);
     //set the output file 
     void output_writer_partial(std::ofstream& ofile, int n_pos, std::vector<bool> atoms);
-    void output_writer(std::ofstream& ofile, int n_pos);
+    void output_writer(std::ofstream& ofile, int n_pos, double time);
 
     //setters and getters
     const std::string get_second_line() const {return second_line;}

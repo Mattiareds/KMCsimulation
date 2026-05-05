@@ -790,21 +790,24 @@ void metropolis::print_output(){
 
 void metropolis::print_configuration(){
     std::string str1 = std::to_string(n_deposited);
-    std::string str2 = std::to_string(time*pow(10,12));
-    int numZeros = 4 - str1.length();
-    int numZeros2 = 15 - str2.length();
+    
+    int numZeros = std::max(0, 4 - static_cast<int>(str1.length()));
+    
     str1.insert(0, numZeros, '0');
-    str2.insert(0,numZeros2,'0');
-    std::string fileName = "occ"+str1+"t"+str2+".txt";
-    std::ofstream intermed_config;
-    intermed_config.open(fileName);
-    c_crd.output_writer(intermed_config, c_crd.sites_size()+n_deposited);
+    
+    std::string fileName = "occ" + str1 + ".out";
+    std::ofstream intermed_config(fileName);
+    
+    c_crd.output_writer(intermed_config, c_crd.sites_size() + n_deposited, time);
     crd.output_writer_partial(intermed_config, n_deposited, atoms);
-    output<<"Printed configuration with: "<<n_deposited<<" occupated sites, at time: "<<time*pow(10,12)<<" picoseconds, = "<<time<<" seconds "<<std::endl;
+    
+    output << "Printed configuration with: " << n_deposited 
+           << " occupated sites, at time: " << time * pow(10, 12) 
+           << " picoseconds, = " << time << " seconds " << std::endl;
 }
 
 void metropolis::start_of_the_sim(){
-    output.open("MC_processes.txt");
+    output.open("MC_processes.out");
     //debug_file.open("debug.out");
     table_of_processes_filler(); //initialize
     deactivated_sites=s.get_upper_sites();
