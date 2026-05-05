@@ -46,7 +46,6 @@ shell_settings.in
 
 mc_settings.in
     Monte Carlo parameters (in order):
-      mc_step          : number of MC steps (currently unused as loop condition)
       n_barriers       : number of distinct energy barriers
       barriers[0..N]   : barrier values in eV (see Section 5 for mapping)
       E_b              : additional energy per nearest neighbour (eV)

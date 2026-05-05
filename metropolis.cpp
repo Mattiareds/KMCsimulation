@@ -11,7 +11,6 @@
 
 void metropolis::file_reader(std::ifstream& ifile){
     if(ifile){
-        ifile>>mc_step;
         int n_barriers;
         ifile>>n_barriers;
         barriere.resize(n_barriers);

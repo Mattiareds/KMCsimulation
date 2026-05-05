@@ -36,7 +36,6 @@ class metropolis{
     static constexpr double Kb = 8.617333262e-5;
     int n_deposited;
     float E_b;
-    int mc_step;
     float temperatura;
     float nu_0;
     double F; //deposition rate
