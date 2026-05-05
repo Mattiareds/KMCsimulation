@@ -595,7 +595,7 @@ void metropolis::map_of_class_next_eraser(int i) {
     auto copy_tip=table_of_initial_pos[i];
     for(int i_site : copy_tip){
         for(int n=0; n<= nnn_atoms[i_site]; n++){
-            for(int i_prc=0 ; i_prc < table_of_end_pos[i_site].size() ; i_prc++) if(table_of_end_pos[i_site][i_prc]==i){
+            for(size_t i_prc=0 ; i_prc < table_of_end_pos[i_site].size() ; i_prc++) if(table_of_end_pos[i_site][i_prc]==i){
                 map_of_class_eraser(table_of_processes[i_site][i_prc] + n, i_site , i);
             }
         }
@@ -733,7 +733,7 @@ void metropolis::time_prob_calc(){
     double r_time=dist_time(rng);
     double P_tot=0.0;
     double P_dep=crd.sites_size()*F;
-    for(int i=0 ; i<P.size() ; i++) P_tot+=P[i];
+    for(size_t i=0 ; i<P.size() ; i++) P_tot+=P[i];
     double P_diff=P_tot;
     P_tot+=P_dep;
     //std::cout<<"prob dep "<<P_dep<<" prob diffusion "<<P_diff <<" prob total "<<P_tot<<std::endl;
@@ -750,7 +750,7 @@ void metropolis::time_prob_calc(){
         deposition=false;
         int chosen_class;
         double p_i = 0;
-        for(int i = 0 ; i < P.size() ; i++){
+        for(size_t i = 0 ; i < P.size() ; i++){
             if( (p_i < r_p) && (r_p < (p_i+P[i])) ) chosen_class = i;
             p_i += P[i];
         }
