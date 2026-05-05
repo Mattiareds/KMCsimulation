@@ -1,6 +1,7 @@
 #include "coordinates.h"
 #include "geometry.h"
 #include "metropolis.h"
+#include <cstddef>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -35,12 +36,12 @@ void metropolis::interested_sites_calc(bool dep){
     auto nn_pos = s.get_table_of_nn(pos);
     interested_sites.clear();
     interested_sites.push_back(pos);
-    for(int i=0 ; i<nn_pos.size() ; i++){
+    for(size_t i=0 ; i<nn_pos.size() ; i++){
         if(nn_pos[i]!=pos) interested_sites.push_back(nn_pos[i]);
     }
     if(!dep){
         auto nn_next = s.get_table_of_nn(next);
-        for(int i=0 ; i<nn_next.size() ; i++){
+        for(size_t i=0 ; i<nn_next.size() ; i++){
             bool already_here=false;
             for(size_t l=0 ; l< interested_sites.size() ; l++) if(nn_next[i]==interested_sites[l]) { already_here=true; break; }
             if(nn_next[i]!=pos && nn_next[i]!=next && !already_here) interested_sites.push_back(nn_next[i]);
@@ -72,7 +73,7 @@ void metropolis::nn_updater(bool dep){
         auto nn_of_nn = s.get_table_of_nn(site);
         auto edge = s.get_edge_map(site);
 
-        for(int i=0 ; i< nn_of_nn.size() ; i++){
+        for(size_t i=0 ; i< nn_of_nn.size() ; i++){
             int nearest=nn_of_nn[i];
             int edges= edge[i];
                 if(atoms[nearest] && (edges < 0)){ //if lt 0 not changed: same facet
@@ -120,14 +121,14 @@ void metropolis::table_of_processes_filler(){
     table_of_end_pos.resize(crd.sites_size(), std::vector<int>(0,0));
     table_of_initial_pos.resize(crd.sites_size(), std::vector<int>(0,0));
     //run over all the sites
-    for(int i=0 ; i<crd.sites_size() ; i++){
+    for(size_t i=0 ; i<crd.sites_size() ; i++){
         std::vector<int> nns= s.get_table_of_nn(i);
         //run over all the pv
-        for(int j=0 ; j<nns.size() ; j++){
+        for(size_t j=0 ; j<nns.size() ; j++){
             int pv=nns[j];
             if(s.get_TOPl(i)==1 || (s.get_TOPl(i)==8 && s.get_TOPl(pv)==8 && s.get_plane(i,1)==s.get_plane(pv,1))){
                  bool already_present = false;
-                for(int k = 0; k < table_of_end_pos[i].size(); k++){
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                     if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 0){
                         already_present = true; break;
                     }
@@ -141,7 +142,7 @@ void metropolis::table_of_processes_filler(){
             }
             else if((s.get_TOPl(i)==0 && s.get_TOPl(pv)==0) || (s.get_TOPl(i)==7 && s.get_TOPl(pv)==7)) {
                  bool already_present = false;
-                for(int k = 0; k < table_of_end_pos[i].size(); k++){
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                     if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 25){
                         already_present = true; break;
                     }
@@ -155,7 +156,7 @@ void metropolis::table_of_processes_filler(){
             }
             else if(s.get_TOPl(i)==8 && s.get_TOPl(pv)==8 && s.get_plane(i,1)!=s.get_plane(pv,1)) {
                  bool already_present = false;
-                for(int k = 0; k < table_of_end_pos[i].size(); k++){
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                     if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 10){
                         already_present = true; break;
                     }
@@ -169,7 +170,7 @@ void metropolis::table_of_processes_filler(){
             }
             else if(s.get_TOPl(i)==8 && s.get_TOPl(pv)==7) {
                  bool already_present = false;
-                for(int k = 0; k < table_of_end_pos[i].size(); k++){
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                     if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 20){
                         already_present = true; break;
                     }
@@ -183,7 +184,7 @@ void metropolis::table_of_processes_filler(){
             }
             else if(s.get_TOPl(i)==7 && s.get_TOPl(pv)==8) {
                  bool already_present = false;
-                for(int k = 0; k < table_of_end_pos[i].size(); k++){
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                     if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 15){
                         already_present = true; break;
                     }
@@ -197,7 +198,7 @@ void metropolis::table_of_processes_filler(){
             }
             else if((s.get_TOPl(i)==7 && s.get_TOPl(pv)==0)) {
                  bool already_present = false;
-                for(int k = 0; k < table_of_end_pos[i].size(); k++){
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                     if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 33){
                         already_present = true; break;
                     }
@@ -211,7 +212,7 @@ void metropolis::table_of_processes_filler(){
             }
             else if(s.get_TOPl(i)==8 && s.get_TOPl(pv)==1) {
                  bool already_present = false;
-                for(int k = 0; k < table_of_end_pos[i].size(); k++){
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                     if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 6){
                         already_present = true; break;
                     }
@@ -225,7 +226,7 @@ void metropolis::table_of_processes_filler(){
             }
             else if((s.get_TOPl(i)==0 && s.get_TOPl(pv)==7)) {
                  bool already_present = false;
-                for(int k = 0; k < table_of_end_pos[i].size(); k++){
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                     if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 40){
                         already_present = true; break;
                     }
@@ -246,11 +247,11 @@ void metropolis::table_of_processes_filler(){
 void metropolis::table_of_processes_updater(int i){    
     std::vector<int> nns= s.get_table_of_nn(i);
     //run over all the pv
-    for(int j=0 ; j<nns.size() ; j++){
+    for(size_t j=0 ; j<nns.size() ; j++){
         int pv=nns[j];
         if(s.get_TOPl(i)==1 || (s.get_TOPl(i)==8 && s.get_TOPl(pv)==8 && s.get_plane(i,1)==s.get_plane(pv,1)) || (s.get_TOPl(i)==8 && s.get_TOPl(pv)==10) || (s.get_TOPl(i)==10 && s.get_TOPl(pv)==10) || (s.get_TOPl(i)==10 && s.get_TOPl(pv)==8) ){
             bool already_present = false;
-            for(int k = 0; k < table_of_end_pos[i].size(); k++){
+            for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                 if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 0){
                     already_present = true; break;
                 }
@@ -264,7 +265,7 @@ void metropolis::table_of_processes_updater(int i){
         }
         else if(s.get_TOPl(i)==8 && s.get_TOPl(pv)==8 && s.get_plane(i,1)!=s.get_plane(pv,1)) {
             bool already_present = false;
-            for(int k = 0; k < table_of_end_pos[i].size(); k++){
+            for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                 if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 10){
                     already_present = true; break;
                 }
@@ -278,7 +279,7 @@ void metropolis::table_of_processes_updater(int i){
         }
         else if((s.get_TOPl(i)==8 || s.get_TOPl(i)==10) && s.get_TOPl(pv)==7) {
             bool already_present = false;
-            for(int k = 0; k < table_of_end_pos[i].size(); k++){
+            for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                 if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 20){
                     already_present = true; break;
                 }
@@ -292,7 +293,7 @@ void metropolis::table_of_processes_updater(int i){
         }
         else if(s.get_TOPl(i)==7 && (s.get_TOPl(pv)==8 || s.get_TOPl(pv)==10)) {
             bool already_present = false;
-            for(int k = 0; k < table_of_end_pos[i].size(); k++){
+            for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                 if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 15){
                     already_present = true; break;
                 }
@@ -306,7 +307,7 @@ void metropolis::table_of_processes_updater(int i){
         }
         else if((s.get_TOPl(i)==8|| s.get_TOPl(i)==8) && s.get_TOPl(pv)==1) {
             bool already_present = false;
-            for(int k = 0; k < table_of_end_pos[i].size(); k++){
+            for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                 if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 6){
                     already_present = true; break;
                 }
@@ -320,7 +321,7 @@ void metropolis::table_of_processes_updater(int i){
         }
         else if(s.get_TOPl(i)==10 && s.get_TOPl(pv)>10){ //jump mixed site->new site
             bool already_present = false;
-            for(int k = 0; k < table_of_end_pos[i].size(); k++){
+            for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                 if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 52){
                     already_present = true; break;
                 }
@@ -349,7 +350,7 @@ std::array<int,2> metropolis::activate_edges(int upper_site, int pv){
     auto edge = s.get_edge_map(pv);
     //debug_file<<"size "<<edge.size()<<std::endl;
     int index=0;
-    for(int i=0 ; i<edge.size() ; i++){
+    for(size_t i=0 ; i<edge.size() ; i++){
         //debug_file<<edge[i]<<std::endl;
         if(edge[i]>=0){
             //update the edge situation: new nn which is the high site
@@ -441,7 +442,7 @@ void metropolis::second_layer_updates(int upper_site){
 
 void metropolis::second_layer_activation(){
     //debug_file<<"second layer test "<<std::endl;
-    for (int i=0 ; i<deactivated_sites.size() ; i++){
+    for (size_t i=0 ; i<deactivated_sites.size() ; i++){
         //debug_file<<" second layer loop "<<std::endl;
         int counter = 0;
         int upper_site = deactivated_sites[i];
@@ -649,7 +650,7 @@ void metropolis::classification(){
             // Get the list of BASE processes for this site
             std::vector<int>& top = table_of_processes[site];
 
-            for(int j=0 ; j < (int)top.size() ; j++){  
+            for(size_t j=0 ; j < (int)top.size() ; j++){  
                 int base_process = top[j]; 
                 int pv = table_of_end_pos[site][j];
                 
