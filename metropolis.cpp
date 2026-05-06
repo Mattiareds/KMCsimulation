@@ -524,7 +524,7 @@ void metropolis::get_process_name(int cl){
     std::string num;
     int nn;
 
-    if (cl >= 8 && cl <= 14)
+    if (cl >= 8 && cl <=14)
     {
         nn = cl - 8;
         num=std::to_string(nn);
