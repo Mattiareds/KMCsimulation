@@ -22,12 +22,12 @@ class metropolis{
     std::vector<bool> atoms;
     std::vector<int> interested_sites; //sites interested in the last iteration
     std::vector<int> nnn_atoms; //number of nn for each atom
-    int movements_per_class[100]; // sarà ridimensionato dopo aver letto n_class
+    int movements_per_class[100]; 
     std::vector<std::vector<int>> table_of_processes; //map initial site -> type of possible processes
     std::vector<std::vector<int>> table_of_end_pos; //map initial site -> possible end sites 
     std::vector<std::vector<int>> table_of_initial_pos; //map finale site -> initial site
     std::vector<int> deactivated_sites;
-    std::vector<double> P; // sarà ridimensionato dopo aver letto n_class
+    std::vector<double> P; 
     std::vector<std::tuple<int,int,int>> dynamic_processes;
     //std::vector<std::vector<std::vector<int>>>  map_class_processes;//map class -> process
     int map_class_processes[100][1000][2];
@@ -46,6 +46,7 @@ class metropolis{
     int next;
     double time=0.0;
     bool deposition=false;
+    bool output_file;
     std::string process_name;
     std::ofstream output;
 
@@ -92,7 +93,7 @@ class metropolis{
     //std::ofstream debug_file;
 
     void file_reader(std::ifstream& ifile);
-    void simulation(); //questa unica accessibile da esterno
+    void simulation(); 
 
 };
 

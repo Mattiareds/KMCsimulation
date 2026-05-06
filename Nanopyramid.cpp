@@ -2,6 +2,7 @@
 #include "geometry.h"
 #include "metropolis.h"
 #include <iostream>
+#include <fstream>
 
 using namespace std;
 
@@ -21,11 +22,42 @@ int main(){
     
     //input files
     ifstream core_coord("piramide.xyz");
+    if (!core_coord.is_open()) {
+        cerr << "ERROR: Could not open file 'piramide.xyz'" << endl;
+        return 1;
+    }
+    
     ifstream shell_coord("siti_jmol.xyz");
+    if (!shell_coord.is_open()) {
+        cerr << "ERROR: Could not open file 'siti_jmol.xyz'" << endl;
+        return 1;
+    }
+    
     ifstream settings("mc_settings.in");
+    if (!settings.is_open()) {
+        cerr << "ERROR: Could not open file 'mc_settings.in'" << endl;
+        return 1;
+    }
+    
     ifstream coordinates_settings("coordinates_settings.in");
+    if (!coordinates_settings.is_open()) {
+        cerr << "ERROR: Could not open file 'coordinates_settings.in'" << endl;
+        return 1;
+    }
+    
     ifstream shell_settings("shell_settings.in");
+    if (!shell_settings.is_open()) {
+        cerr << "ERROR: Could not open file 'shell_settings.in'" << endl;
+        return 1;
+    }
+    
     ofstream output_file("out.out");
+    if (!output_file.is_open()) {
+        cerr << "ERROR: Could not create output file 'out.out'" << endl;
+        return 1;
+    }
+
+    cout << "All input files successfully opened." << endl;
 
     //read input files
     core.initialize(core_coord);
@@ -44,4 +76,6 @@ int main(){
    
     //simulation
     alg.simulation();
+    
+    return 0;
 }

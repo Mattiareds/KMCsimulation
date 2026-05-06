@@ -8,10 +8,13 @@
 --------------------------------------------------------------------------------
 
 This program implements a Kinetic Monte Carlo (kMC) simulation of atomic
-diffusion and deposition on the shell of a bimetallic nanopyramid. The core
-of the nanoparticle is fixed; only the shell sites are active. Atoms are
+diffusion and deposition on the shell of a truncated octahedron nanoparticle,
+but can be adapted to others geometry under request. 
+The core of the nanoparticle is fixed; only the shell sites are active. Atoms are
 deposited stochastically on the shell surface and then diffuse according to
 thermally activated hopping rates between nearest-neighbour (NN) sites.
+The activation barriers reported are calculated via Density Functional Theory
+relax calculations, combined with Drag Method.
 
 The simulation follows the standard Residence Time Algorithm (BKL algorithm):
 at each step, all possible processes and their rates are known, a process is
@@ -171,17 +174,17 @@ where nnn_atoms[site] is the number of occupied NN sites of the hopping atom
 
 Base process indices and their barrier mapping (barrier index in parentheses):
 
-  Base  0  : {111}c -> {111}c, same facet             (barrier[0])
-  Base  6  : {111}b -> {111}c, same facet              (barrier[6])
-  Base  10 : {111}b -> {111}b, different facets        (barrier[2])
-  Base  15 : {100}b -> {111}b  (escape from 100)       (barrier[4])
-  Base  19 : {111}b -> {100}b  (enter 100)             (barrier[3])
-  Base  24 : {100}c -> {100}c, same facet              (barrier[1])
-  Base  28 : {100}b -> {100}c                          (barrier[5])
-  Base  31 : {100}c -> {100}b                          (barrier[7])
-  Base  36 : push ({111}b pushes atom on {100}b)       (barrier[8])
-  Base  41 : mixed site -> second-layer site           (barrier[9])
-  Base  44 : kink (second-layer -> first-layer         (barrier[10])
+  Base  {111}c -> {111}c, same facet             (barrier[0])
+  Base  {111}b -> {111}c, same facet              (barrier[6])
+  Base  {111}b -> {111}b, different facets        (barrier[2])
+  Base  {100}b -> {111}b  (escape from 100)       (barrier[4])
+  Base  {111}b -> {100}b  (enter 100)             (barrier[3])
+  Base  {100}c -> {100}c, same facet              (barrier[1])
+  Base  {100}b -> {100}c                          (barrier[5])
+  Base  {100}c -> {100}b                          (barrier[7])
+  Base  push ({111}b pushes atom on {100}b)       (barrier[8])
+  Base  mixed site -> second-layer site           (barrier[9])
+  Base  kink (second-layer -> first-layer         (barrier[10])
              even if destination is occupied)
 
 The hop rate for class c is:
@@ -400,7 +403,8 @@ MC_processes.out
       - For diffusion: "process_name  from  X  to  Y"
       - For deposition: "New atom: X  at time: T"
         followed by the full xyz snapshot of all shell sites.
-    Useful if you are interested to follow each process, but can be very large
+    Useful if you are interested to follow each process, but can be very large, 
+    its writing can be deactivated from mc_settings file.
 
 
 occ*.out
@@ -411,6 +415,22 @@ debug.out
     Verbose log of internal state: process table at startup, site types,
     classification and erasure calls, neighbour counts, second-layer events.
     Used for debugging; can be very large.
+
+--------------------------------------------------------------------------------
+AUTHORS
+--------------------------------------------------------------------------------
+This code was written entirely by me, Mattia Piero Rossi, as part of my Master's 
+degree thesis in Physics. This work was supervised by Prof. Riccardo Ferrando
+
+--------------------------------------------------------------------------------
+REFERENCES
+--------------------------------------------------------------------------------
+Here some interesting papers about this algorithm, that was fitted for this 
+specific problem. 
+
+https://doi.org/10.1016/0021-9991(75)90060-1
+
+https://arxiv.org/abs/0904.2556 
 
 
 ================================================================================
