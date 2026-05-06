@@ -395,42 +395,23 @@ Deposition stops (F is set to 0) when n_deposited >= filling * n_sites.
 12. OUTPUT FILES
 --------------------------------------------------------------------------------
 
-MC_processes.txt
+MC_processes.out
     One line per MC event:
       - For diffusion: "process_name  from  X  to  Y"
       - For deposition: "New atom: X  at time: T"
         followed by the full xyz snapshot of all shell sites.
+    Useful if you are interested to follow each process, but can be very large
+
+
+occ*.out
+  .xyz-like file with the coordinates of the configuration each time a new atom
+  is deposited
 
 debug.out
     Verbose log of internal state: process table at startup, site types,
     classification and erasure calls, neighbour counts, second-layer events.
     Used for debugging; can be very large.
 
-
---------------------------------------------------------------------------------
-13. KNOWN LIMITATIONS AND DESIGN NOTES
---------------------------------------------------------------------------------
-
-- The edge exclusion via pv_substitution only applies to edge sites of type
-  2-6 (between {111} faces or between {111} and {100} faces). Border sites of
-  type 7 ({100} border) are intentionally NOT substituted, as they are valid
-  diffusion endpoints on the {100} face.
-
-- Second-layer deactivation is not implemented. This is physically justified
-  since it is extremely rare for a first-layer site to empty while a
-  second-layer site above it is occupied.
-
-- Push and kink processes are dynamic: they are not stored in table_of_processes
-  but are re-evaluated every MC step in classification() and stored temporarily
-  in dynamic_processes. They are erased at the start of the next step.
-
-- The core plane 14 (second-layer virtual plane of the core) is excluded from
-  the test_border() loop to avoid misclassifying internal {100} shell sites
-  as border sites when their z-coordinate coincidentally matches that plane.
-
-- nnn_atoms counts only same-face neighbours: a NN slot j of site i is counted
-  only if edge_map[i][j] < 0. This ensures that the barrier modification E_b
-  reflects only atoms on the same crystallographic face.
 
 ================================================================================
 END OF README
