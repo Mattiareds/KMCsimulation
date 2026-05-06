@@ -8,10 +8,10 @@
 #include <new>
 #include <unordered_set>
 
-/**
- * Reads simulation parameters from an input file.
- * Initializes energy barriers, temperature, flux (F), and 
- * prepares the internal data structures for the process classes.
+/*
+ * Reads the simulation parameters from the input file.
+ * Initializes energy barriers, temperature, flux (F), and sets up the internal 
+ * data structures for process classification .
  */
 void metropolis::file_reader(std::ifstream& ifile){
     if(ifile){
@@ -35,20 +35,16 @@ void metropolis::file_reader(std::ifstream& ifile){
         else if(file=="F") output_file=false;
 
         for (int i=0; i<100; i++) movements_per_class[i]=0;
-        for (int i=0 ; i< 100; i++){ 
-            for(int j=0 ; j<1000 ; j++){
-                for (int k=0; k<2; k++) map_class_processes[i][j][k]=-1;
-            }
-        }
+        for (int i=0 ; i< 100; i++){ for(int j=0 ; j<1000 ; j++){for (int k=0; k<2; k++) map_class_processes[i][j][k]=-1;}}
         P.resize(n_class, 0.0);
         n_deposited=0;
     }
 }
 
-/**
- * Identifies which lattice sites need an update after a move or deposition.
- * This limits the recalculation only to the neighborhood of the changed sites, 
- * which is essential for simulation performance.
+/*
+ * Identifies the lattice sites that require a recalculation of their 
+ * possible processes after a move or deposition event. It optimizes performance 
+ * by targeting only the relevant neighborhood .
  */
 void metropolis::interested_sites_calc(bool dep){
     auto nn_pos = s.get_table_of_nn(pos);
@@ -67,24 +63,29 @@ void metropolis::interested_sites_calc(bool dep){
     }
 }
 
-/**
- * Updates the coordination number (nearest neighbors) for sites affected by the last event.
- * It accounts for different facets and ensures that geometric boundaries are respected.
+/*
+ * Updates the number of nearest neighbors (coordination) for sites 
+ * affected by the recent atomic movement. This count is fundamental 
+ * for calculating transition energy barriers .
  */
 void metropolis::nn_updater(bool dep){
     bool pos_checked=false;
     bool next_checked=false;
     std::unordered_set<int> sites_to_update;
 
+    // Neighbors of the departure position
     auto nn_pos = s.get_table_of_nn(pos);
     sites_to_update.insert(nn_pos.begin(), nn_pos.end());
 
+    // If diffusion, also add neighbors of the arrival position
     if(!dep){
         auto nn_next = s.get_table_of_nn(next);
         sites_to_update.insert(nn_next.begin(), nn_next.end());
     }
 
+    // Update each site coordination precisely once
     for(int site : sites_to_update){
+        
         int count = 0;
         auto nn_of_nn = s.get_table_of_nn(site);
         auto edge = s.get_edge_map(site);
@@ -114,9 +115,9 @@ void metropolis::nn_updater(bool dep){
     }
 }
 
-/**
- * Helper to determine if a site belongs to a geometric boundary 
- * based on its TOPl (Type of Plane/Facet) value.
+/*
+ * Determines if a site index belongs to a facet boundary (border) based 
+ * on the geometric mapping (TOPl values) .
  */
 bool metropolis::is_border(int i){
     if(s.get_TOPl(i)==8 || s.get_TOPl(i)==7 || s.get_TOPl(i)==15){
@@ -125,8 +126,8 @@ bool metropolis::is_border(int i){
     return false;
 }
 
-/**
- * Checks if two sites belong to different geometric boundaries.
+/*
+ * Checks if two border sites belong to different facets of the nanoparticle .
  */
 bool metropolis::are_different_border(int i, int j){
     if(is_border(i) && is_border(j)){
@@ -137,20 +138,20 @@ bool metropolis::are_different_border(int i, int j){
     return false;
 }
 
-/**
- * Initial population of the possible physical processes based on static geometry.
- * Categorizes jumps (111 to 111, 100 to 111, etc.) into base process types.
+/*
+ * Populates the static tables of possible physical processes based on 
+ * the crystal geometry. It identifies all valid jumps between centers 
+ * and borders of different facets .
  */
 void metropolis::table_of_processes_filler(){
     table_of_processes.resize(crd.sites_size(), std::vector<int>(0,0));
     table_of_end_pos.resize(crd.sites_size(), std::vector<int>(0,0));
     table_of_initial_pos.resize(crd.sites_size(), std::vector<int>(0,0));
-
+    
     for(size_t i=0 ; i<crd.sites_size() ; i++){
         std::vector<int> nns= s.get_table_of_nn(i);
         for(size_t j=0 ; j<nns.size() ; j++){
             int pv=nns[j];
-            // Cases: 111 centers, 100 centers, jumps between facets, etc.
             if(s.get_TOPl(i)==1 || (s.get_TOPl(i)==8 && s.get_TOPl(pv)==8 && s.get_plane(i,1)==s.get_plane(pv,1))){
                  bool already_present = false;
                 for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
@@ -159,7 +160,7 @@ void metropolis::table_of_processes_filler(){
                     }
                 }
                 if(!already_present){
-                    table_of_processes[i].push_back(0); 
+                    table_of_processes[i].push_back(0); // 111c to 111c
                     table_of_end_pos[i].push_back(pv);
                     table_of_initial_pos[pv].push_back(i);
                 }
@@ -172,12 +173,11 @@ void metropolis::table_of_processes_filler(){
                     }
                 }
                 if(!already_present){
-                    table_of_processes[i].push_back(36); 
+                    table_of_processes[i].push_back(36); // 100c to 100c
                     table_of_end_pos[i].push_back(pv);
                     table_of_initial_pos[pv].push_back(i);
                 }
             }
-            // (Other geometry cases follow the same logic...)
             else if(s.get_TOPl(i)==8 && s.get_TOPl(pv)==8 && s.get_plane(i,1)!=s.get_plane(pv,1)) {
                  bool already_present = false;
                 for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
@@ -186,7 +186,7 @@ void metropolis::table_of_processes_filler(){
                     }
                 }
                 if(!already_present){
-                    table_of_processes[i].push_back(15); 
+                    table_of_processes[i].push_back(15); // 111 inter-facet jump
                     table_of_end_pos[i].push_back(pv);
                     table_of_initial_pos[pv].push_back(i);
                 }
@@ -199,7 +199,7 @@ void metropolis::table_of_processes_filler(){
                     }
                 }
                 if(!already_present){
-                    table_of_processes[i].push_back(29); 
+                    table_of_processes[i].push_back(29); // 111 jump to 100
                     table_of_end_pos[i].push_back(pv);
                     table_of_initial_pos[pv].push_back(i);
                 }
@@ -212,7 +212,7 @@ void metropolis::table_of_processes_filler(){
                     }
                 }
                 if(!already_present){
-                    table_of_processes[i].push_back(22); 
+                    table_of_processes[i].push_back(22); // 100 jump to 111
                     table_of_end_pos[i].push_back(pv);
                     table_of_initial_pos[pv].push_back(i);
                 }
@@ -225,7 +225,7 @@ void metropolis::table_of_processes_filler(){
                     }
                 }
                 if(!already_present){
-                    table_of_processes[i].push_back(45); 
+                    table_of_processes[i].push_back(45); // 100b to 100c
                     table_of_end_pos[i].push_back(pv);
                     table_of_initial_pos[pv].push_back(i);
                 }
@@ -238,7 +238,7 @@ void metropolis::table_of_processes_filler(){
                     }
                 }
                 if(!already_present){
-                    table_of_processes[i].push_back(8); 
+                    table_of_processes[i].push_back(8); // 111b to 111c
                     table_of_end_pos[i].push_back(pv);
                     table_of_initial_pos[pv].push_back(i);
                 }
@@ -251,7 +251,7 @@ void metropolis::table_of_processes_filler(){
                     }
                 }
                 if(!already_present){
-                    table_of_processes[i].push_back(53); 
+                    table_of_processes[i].push_back(53); // 100c to 100b
                     table_of_end_pos[i].push_back(pv);
                     table_of_initial_pos[pv].push_back(i);
                 }
@@ -260,9 +260,10 @@ void metropolis::table_of_processes_filler(){
     }
 }
 
-/**
- * Updates process tables dynamically when mixed sites or new facets are involved.
- * This is used during simulation as the cluster grows.
+/*
+ * Dynamically updates the process table during the simulation. It handles 
+ * the activation of new sites (like "mixed" sites) that appear as the 
+ * cluster grows .
  */
 void metropolis::table_of_processes_updater(int i){    
     std::vector<int> nns= s.get_table_of_nn(i);
@@ -294,7 +295,6 @@ void metropolis::table_of_processes_updater(int i){
                 table_of_initial_pos[pv].push_back(i);
             }
         }
-        // (Similar logic for 29, 22, 8, and 66...)
         else if((s.get_TOPl(i)==8 || s.get_TOPl(i)==10) && s.get_TOPl(pv)==7) {
             bool already_present = false;
             for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
@@ -350,18 +350,19 @@ void metropolis::table_of_processes_updater(int i){
     }
 }
 
-/**
- * Checks if a site is in the deactivated list (typically sites on the 100-facet
- * that aren't available for the 2nd layer yet).
+/*
+ * Checks if a site is currently in the "deactivated" state. This usually 
+ * applies to the 100-facet second layer sites before they are 
+ * geometrically reachable .
  */
 bool metropolis::is_deactivated(int i){
     for(int j : deactivated_sites) if (j==i) return true;
     return false;
 }
 
-/**
- * Transforms an edge site into an active gateway between facets.
- * This happens when atoms occupy strategic positions that "bridge" two planes.
+/*
+ * Activates the geometric edges between facets. When an atom is nearby, 
+ * it "unlocks" previously hidden coordination sites to allow inter-facet diffusion .
  */
 std::array<int,2> metropolis::activate_edges(int upper_site, int pv){
     std::array<int,2> back={-1,-1};
@@ -375,7 +376,9 @@ std::array<int,2> metropolis::activate_edges(int upper_site, int pv){
             for(auto old_nn : s.get_table_of_nn(edge[i])){
                 if(s.get_TOPl(old_nn)==8){
                     int oppc = 0;
-                    for (int p : table_of_processes[old_nn]) if(p==0) oppc++;
+                    for (int p : table_of_processes[old_nn]){
+                        if(p==0) oppc++;
+                    }
                     s.append_nn(old_nn, edge[i]);
                     if(oppc > 2) s.set_TOPl(old_nn, 1);
                     s.set_plane(edge[i], 20);
@@ -384,6 +387,7 @@ std::array<int,2> metropolis::activate_edges(int upper_site, int pv){
             }
             table_of_processes_updater(edge[i]);
             s.reset_edge_map(pv, i);
+
             back[index]=edge[i];
             index++;
         }
@@ -392,8 +396,9 @@ std::array<int,2> metropolis::activate_edges(int upper_site, int pv){
     return back;
 }
 
-/**
- * Adds process definitions specifically for the second layer of the 100-facet.
+/*
+ * Specific update for the second layer of the nanoparticle. It defines how 
+ * atoms on newly created surfaces can move based on local coordination .
  */
 void metropolis::second_layer_updates(int upper_site){
     auto nn=s.get_table_of_nn(upper_site);
@@ -437,15 +442,18 @@ void metropolis::second_layer_updates(int upper_site){
     }
 }
 
-/**
- * Checks the "deactivated" sites on the 100-facet. 
- * If a site now has enough neighbors (>=4), it is activated for the simulation.
+/*
+ * Controls the activation of the second atomic layer. When a site 
+ * reaches a coordination of 4, it is no longer considered "virtual" 
+ * and enters the simulation dynamics .
  */
 void metropolis::second_layer_activation(){
     for (size_t i=0 ; i<deactivated_sites.size() ; i++){
         int counter = 0;
         int upper_site = deactivated_sites[i];
-        for(int j : s.get_table_of_nn(upper_site)) if(atoms[j]==true) counter++;
+        for(int j : s.get_table_of_nn(upper_site)){
+            if(atoms[j]==true) counter++;
+        }
         if(counter >= 4){
             second_layer_updates(upper_site); 
             deactivated_sites.erase(deactivated_sites.begin()+i);
@@ -453,12 +461,14 @@ void metropolis::second_layer_activation(){
     }
 }
 
-/**
- * Maps a process class index back to its physical parameters:
- * barrier_id (base energy) and the number of nearest neighbors (multiplied by E_b).
+/*
+ * Maps a process class to the correct energy barrier ID and neighbor multiplier. 
+ * This is used to compute the Arrhenius probability of the event .
  */
 void metropolis::barrier_chooser(int cl, int &bar_id , int &neighbours ){
+    std::string num;
     int bar[2];
+
     if (cl >= 8 && cl <= 14) { bar[0] = 6; bar[1] = cl - 8; }
     else if (cl >= 15 && cl <= 21) { bar[0] = 2; bar[1] = cl - 15; }
     else if (cl >= 22 && cl <= 28) { bar[0] = 4; bar[1] = cl - 22; }
@@ -470,34 +480,102 @@ void metropolis::barrier_chooser(int cl, int &bar_id , int &neighbours ){
     else if (cl >= 66 && cl <= 71) { bar[0] = 9; bar[1] = cl - 66; }
     else if (cl >= 72) { bar[0] = 10; bar[1] = cl - 72; }
     else { bar[0] = 0; bar[1] = cl; }
+
     bar_id=bar[0];
     neighbours=bar[1];
 }
 
-/**
- * Returns a human-readable name for the selected process class (used for logging).
+/*
+ * Assigns a string name to each process class based on the geometric 
+ * transition (e.g., 111border to 111center) for readable output logging .
  */
 void metropolis::get_process_name(int cl){
-    int nn;
     std::string num;
-    if (cl >= 8 && cl <=14) { nn = cl - 8; process_name = "111border to 111center same facet with: " + std::to_string(nn) + " nn"; }
-    else if (cl >= 15 && cl <= 21) { nn = cl - 15; process_name = "111border to 111border diff facet with: " + std::to_string(nn) + " nn"; }
-    // ... (rest of the process naming logic)
-    else { nn = cl; process_name = "111center to 111center with: " + std::to_string(nn) + " nn"; }
+    int nn;
+
+    if (cl >= 8 && cl <=14)
+    {
+        nn = cl - 8; num=std::to_string(nn);
+        process_name = "111border to 111center same facet with: " + num + " nearest neighbors";
+        return;
+    }
+    else if (cl >= 15 && cl <= 21)
+    {
+        nn = cl - 15; num=std::to_string(nn);
+        process_name = "111border to 111border different facets with: " + num + " nearest neighbors";
+        return;
+    }
+    else if (cl >= 22 && cl <= 28)
+    {
+        nn = cl - 22; num=std::to_string(nn);
+        process_name = "100 to 111 with: " + num + " nearest neighbors";
+        return;
+    }
+    else if (cl >= 29 && cl <= 35)
+    {
+        nn = cl - 29; num=std::to_string(nn);
+        process_name = "111 to 100 with: " + num + " nearest neighbors";
+        return;
+    }
+    else if (cl >= 36 && cl <= 44)
+    {
+        nn = cl - 36; num=std::to_string(nn);
+        process_name = "100center to 100center same facet with: " + num + " nearest neighbors";
+        return;
+    }
+    else if (cl >= 45 && cl <= 52)
+    {
+        nn = cl - 45; num=std::to_string(nn);
+        process_name = "100border to 100center same facet with: " + num + " nearest neighbors";
+        return;
+    }
+    else if (cl >= 53 && cl <= 59)
+    {
+        nn = cl - 53; num=std::to_string(nn);
+        process_name = "100center to 100border with: " + num + " nearest neighbors";
+        return;
+    }
+    else if (cl >= 60 && cl <= 65)
+    {
+        nn = cl - 60; num=std::to_string(nn);
+        process_name = "111border-push-100  with: " + num + " nearest neighbors";
+        return;
+    }
+    else if (cl >= 66 && cl <= 71)
+    {
+        nn = cl - 66; num=std::to_string(nn);
+        process_name = "111 mixed to 100 double with: " + num + " nearest neighbors";
+        return;
+    }
+    else if (cl >= 72)
+    {
+        nn = cl - 72; num=std::to_string(nn);
+        process_name = "kink: 100shell to 100core with: " + num + " nearest neighbors";
+        return;
+    }
+    else
+    {
+        nn = cl; num=std::to_string(nn);
+        process_name = "111center to 111center same facet with: " + num + " nearest neighbors";
+        return;
+    }
 }
 
-/**
- * Calculates the transition rate using the Arrhenius law: 
- * rate = nu_0 * exp(-(E_barrier + n*E_bond) / kT)
+/*
+ * Calculates the jump frequency (probability rate) using the Arrhenius law: 
+ * $Rate = \nu_0 \exp\left(-\frac{E_{barrier} + n \cdot E_b}{K_b T}\right)$ .
  */
 double metropolis::probability_calculator(int cl){
-    int b_id = 0, neighbours = 0;
+    int b_id = 0;
+    int neighbours = 0;
     barrier_chooser(cl, b_id, neighbours);
-    return nu_0 * (exp((-1.) *(barriere[b_id] + (neighbours*E_b)) / (Kb*temperatura)));
+    double rt_value = nu_0 * (exp((-1.) *(barriere[b_id] + (neighbours*E_b)) / (Kb*temperatura) )) ;
+    return (rt_value);
 }
 
-/**
- * Utility to shift elements in the process array after an erasure to keep it compact.
+/*
+ * Maintenance function that shifts the processes list to ensure there 
+ * are no "holes" in the memory structure after an event .
  */
 void metropolis::shifter(int c, int ind, int tg){
     for(int i = ind ; i<tg ; i++){
@@ -506,16 +584,19 @@ void metropolis::shifter(int c, int ind, int tg){
     }
 }
 
-/**
- * Removes a specific [start_site, end_site] move from the process catalog.
+/*
+ * Removes a single specific jump from the process catalog when it 
+ * is no longer physically possible (e.g., neighbor coordination changed) .
  */
 void metropolis::map_of_class_eraser(int c, int i, int j) {
     auto& processes= map_class_processes[c];
     int tg = get_MCP_size(c);
     for(int ind=0; ind< tg ; ind++){
         auto& couple = processes[ind];
+        if(couple[0]==-1) break;
         if(couple[0]==i && couple[1]==j){
-            couple[0]=-1; couple[1]=-1;
+            couple[0]=-1;
+            couple[1]=-1;
             movements_per_class[c]--;
             shifter(c,ind,tg);
             break;
@@ -523,8 +604,10 @@ void metropolis::map_of_class_eraser(int c, int i, int j) {
     }
 }
 
-/**
- * Removes all processes starting from a site. Called when an atom leaves a site.
+/*
+ * Erases all processes originating from a specific site. Used when 
+ * an atom moves away from that site, making all previous outgoing 
+ * jumps invalid .
  */
 void metropolis::map_of_class_position_eraser(int i, int n_nn) {
     auto processes = table_of_processes[i];
@@ -534,88 +617,109 @@ void metropolis::map_of_class_position_eraser(int i, int n_nn) {
     }
 }
 
-/**
- * Removes all processes ending at a site. Called when a site becomes occupied.
+/*
+ * Erases all processes targeting a specific site. Used when a site 
+ * becomes occupied, making it an invalid destination for other atoms .
  */
 void metropolis::map_of_class_next_eraser(int i) {
     auto copy_tip=table_of_initial_pos[i];
     for(int i_site : copy_tip){
         for(int n=0; n<= nnn_atoms[i_site]; n++){
-            for(size_t i_prc=0 ; i_prc < table_of_end_pos[i_site].size() ; i_prc++){
-                if(table_of_end_pos[i_site][i_prc]==i){
-                    map_of_class_eraser(table_of_processes[i_site][i_prc] + n, i_site , i);
-                }
+            for(size_t i_prc=0 ; i_prc < table_of_end_pos[i_site].size() ; i_prc++) if(table_of_end_pos[i_site][i_prc]==i){
+                map_of_class_eraser(table_of_processes[i_site][i_prc] + n, i_site , i);
             }
         }
     }
 }
 
-/**
- * Inserts a new move into the process catalog.
+/*
+ * Adds a physical jump to the global catalog for a given class .
  */
 void metropolis::map_of_class_filler(int c, int i , int j){
     auto& processes = map_class_processes[c];
     for (auto& couple: processes){
-        if(couple[0]<0){ couple[0]=i; couple[1]=j; movements_per_class[c]++; break; }
+        if(couple[0]<0){
+            couple[0]=i;
+            couple[1]=j;
+            movements_per_class[c]++;
+            break;
+        }
     }
 }
 
-/**
- * Returns the number of active processes in a specific class.
+/*
+ * Returns the current number of valid processes stored in a specific class .
  */
 int metropolis::get_MCP_size(int c){
     int counter=0;
     auto& processes = map_class_processes[c];
     for (auto& couple: processes){
-        if(couple[0]<0) break;
+        if(couple[0]<0){
+            break;
+        }
         counter++;
     }
     return counter;
 }
 
-/**
- * Clears temporary processes (like Push or Kink moves) that depend on specific atom configurations.
+/*
+ * Clears conditional processes like "Push" or "Kink" which depend on 
+ * transient local configurations and must be rerealculated every step .
  */
 void metropolis::clear_dynamic_processes(){
-    for(auto& [site, pv, cl] : dynamic_processes) map_of_class_eraser(cl, site, pv);
+    for(auto& [site, pv, cl] : dynamic_processes){
+        map_of_class_eraser(cl, site, pv);
+    }
     dynamic_processes.clear();
 }
 
-/**
- * Core function of the KMC: updates the list of all possible moves for the "interested sites".
- * It classifies moves based on the current local coordination (neighbors) and facet type.
+/*
+ * The core logic for Kinetic Monte Carlo classification. For each 
+ * interested site, it checks which physical moves are valid based 
+ * on current occupancy and coordination .
  */
 void metropolis::classification(){
     clear_dynamic_processes();
     for(int site : interested_sites){
         if(atoms[site]){
             int nn_count = nnn_atoms[site];
+            
             for(int t=0 ; t <= 6 ; t++) map_of_class_position_eraser(site, t);
 
             std::vector<int>& top = table_of_processes[site];
+
             for(size_t j=0 ; j < (int)top.size() ; j++){  
                 int base_process = top[j]; 
                 int pv = table_of_end_pos[site][j];
                 
                 if(!atoms[pv]){ 
-                    int actual_class = base_process + nn_count;
-                    if(actual_class >= 0 && actual_class < 100) map_of_class_filler(actual_class, site, pv);
-                }
-                // Handle Push and Kink logic...
-                else if(atoms[pv] && s.get_TOPl(pv)==7 && s.get_TOPl(site)==8){
-                    auto nn = s.get_table_of_nn(pv);
-                    for(int n : nn) if(!atoms[n] && s.get_TOPl(n)==0){
-                        int actual_class = 60 + nn_count;
-                        dynamic_processes.emplace_back(site, n, actual_class);
-                        map_of_class_filler(actual_class, site, n);
+                    int actual_class = base_process + nn_count; 
+                    if(actual_class >= 0 && actual_class < 100) {
+                        map_of_class_filler(actual_class, site, pv);                        
+                    } else {
+                        std::cerr << "Error: Class " << actual_class << " exceeds array size!" << std::endl;
                     }
                 }
+                // Push logic
+                else if(atoms[pv] && s.get_TOPl(pv)==7 && s.get_TOPl(site)==8){
+                    auto nn = s.get_table_of_nn(pv);
+                    for(int n : nn){
+                        if(!atoms[n] && s.get_TOPl(n)==0){
+                            int actual_class = 60 + nn_count;
+                            dynamic_processes.emplace_back(site, n, actual_class);
+                            map_of_class_filler(actual_class, site, n);
+                        }
+                    }
+                }
+                // Kink logic
                 else if(atoms[pv] && base_process==72){
                     auto nn = s.get_table_of_nn(pv);
-                    for(int n : nn) if(!atoms[n] && (s.get_TOPl(n)==0 || s.get_TOPl(n)==7)){
-                        int actual_class = 72 + nn_count;
-                        dynamic_processes.emplace_back(site, n, actual_class);
-                        map_of_class_filler(actual_class, site, n);
+                    for(int n : nn){
+                        if(!atoms[n] && (s.get_TOPl(n)==0 || s.get_TOPl(n)==7)){
+                            int actual_class = 72 + nn_count;
+                            dynamic_processes.emplace_back(site, n, actual_class);
+                            map_of_class_filler(actual_class, site, n);
+                        }
                     }
                 }
             }
@@ -623,28 +727,37 @@ void metropolis::classification(){
     }
 }
 
-/**
- * Fills the total probability vector P. 
- * P[i] = (number of moves in class i) * (rate of a single move in class i).
+/*
+ * Calculates the total probability for each class by multiplying the 
+ * individual process rate by the number of active processes in that class .
  */
 void metropolis::probability_filler(){
     std::fill(P.begin(), P.end(), 0.0); 
     for(int i=0 ; i < n_class ; i++){
-        if(movements_per_class[i] > 0) P[i] = movements_per_class[i] * probability_calculator(i);
+        if(movements_per_class[i] > 0) {
+            double p = probability_calculator(i);
+            if(movements_per_class[i]> 6*n_deposited) std::exit(0);
+            P[i] = movements_per_class[i] * p;
+        }
     }
 }
 
-/**
- * Handles the deposition of a new atom from the flux.
- * Randomly selects a site on the permitted facets.
+/*
+ * Handles the deposition of a new atom. It randomly selects a valid 
+ * surface site on the nanoparticle and updates the system occupancy .
  */
 void metropolis::deposition_func(){
     int p; 
     int n_nodep = deactivated_sites.size();
     int max_sites = crd.sites_size();
+
     while(true) {
         p = static_cast<int>(initial_pos(rng) * (max_sites - n_nodep));
-        if(s.get_TOPl(p) < 2 && !atoms[p]) break; 
+        if(p < 0) p = 0;
+        if(p >= max_sites) p = max_sites - 1;
+        if(s.get_TOPl(p) < 2 && !atoms[p]) {
+            break; 
+        }
     }
     atoms[p] = true;
     pos = p;
@@ -652,11 +765,10 @@ void metropolis::deposition_func(){
     output << "New atom: " << p << "    at time: "<< time <<std::endl;
 }
 
-/**
- * The KMC heart: 
- * 1. Calculates the time step (delta_t = -ln(r)/Total_Rate).
- * 2. Decides if the next event is a Deposition or a Diffusion jump.
- * 3. Picks the specific process and site based on their relative probabilities.
+/*
+ * Calculates the time interval between events and chooses the next 
+ * event to occur (Deposition vs Diffusion) using a weighted 
+ * random selection based on total probabilities .
  */
 void metropolis::time_prob_calc(){
     double r_time=dist_time(rng);
@@ -665,25 +777,38 @@ void metropolis::time_prob_calc(){
     for(size_t i=0 ; i<P.size() ; i++) P_tot+=P[i];
     double P_diff=P_tot;
     P_tot+=P_dep;
-
+    
+    // Time increment based on the sum of all possible event rates
     time += ( -(log(r_time)) / P_tot);
 
-    double r_p = dist_time(rng) * P_tot;
+    double random = dist_time(rng);
+    double r_p = random * P_tot;
     if(r_p>P_diff){
         deposition=true;
     } else {
         deposition=false;
-        int chosen_class = 0;
+        int chosen_class;
         double p_i = 0;
         for(size_t i = 0 ; i < P.size() ; i++){
-            if( (p_i < r_p) && (r_p < (p_i+P[i])) ) { chosen_class = i; break; }
+            if( (p_i < r_p) && (r_p < (p_i+P[i])) ) chosen_class = i;
             p_i += P[i];
         }
 
         int mcount = movements_per_class[chosen_class];
+        if(mcount <= 0){
+            std::cerr << "Warning: chosen_class has no movements: " << chosen_class << std::endl;
+            std::exit(0);
+        }
         std::uniform_int_distribution<> dist(0, mcount - 1);
         int movement = dist(rng);
-        
+        if(atoms[map_class_processes[chosen_class][movement][0]]==false){
+            std::cerr<<"Atomo inesistente... "<<std::endl;
+            std::exit(0);
+        }
+        if(movement < 0 || movement >= get_MCP_size(chosen_class)){
+            std::cerr << "Error: movement index out of range: " << movement << " >= " << get_MCP_size(chosen_class) << std::endl;
+            return;
+        }
         const auto& mv = map_class_processes[chosen_class][movement];
         next = mv[1];
         pos = mv[0];
@@ -695,25 +820,36 @@ void metropolis::time_prob_calc(){
     }
 }
 
+/*
+ * Logs the specific process that just occurred to the output file .
+ */
 void metropolis::print_output(){
     output<< process_name << "  from    " << pos <<"  to    "<< next <<std::endl;
 }
 
-/**
- * Saves the current configuration (occupied sites) to a file.
+/*
+ * Exports the current spatial configuration of the nanoparticle into 
+ * a file for visualization and later analysis .
  */
 void metropolis::print_configuration(){
     std::string str1 = std::to_string(n_deposited);
     int numZeros = std::max(0, 4 - static_cast<int>(str1.length()));
     str1.insert(0, numZeros, '0');
+    
     std::string fileName = "occ" + str1 + ".out";
     std::ofstream intermed_config(fileName);
+    
     c_crd.output_writer(intermed_config, c_crd.sites_size() + n_deposited, time);
     crd.output_writer_partial(intermed_config, n_deposited, atoms);
+    
+    output << "Printed configuration with: " << n_deposited 
+           << " occupated sites, at time: " << time * pow(10, 12) 
+           << " picoseconds, = " << time << " seconds " << std::endl;
 }
 
-/**
- * Initializes simulation data: output files, geometry tables, and the first deposition.
+/*
+ * Sets up the initial simulation state, initializes the nanoparticle, 
+ * and triggers the first deposition event .
  */
 void metropolis::start_of_the_sim(){
     output.open("MC_processes.out");
@@ -726,8 +862,10 @@ void metropolis::start_of_the_sim(){
     nn_updater(deposition);
 }
 
-/**
- * The main KMC loop. Continues until simulation time reaches total_time.
+/*
+ * The main Kinetic Monte Carlo loop. It iterates through process 
+ * classification, probability calculation, and event execution 
+ * until the total simulation time is reached .
  */
 void metropolis::algorithm(){
     while(time<total_time){
@@ -745,7 +883,7 @@ void metropolis::algorithm(){
         interested_sites_calc(deposition);
         nn_updater(deposition);
         pos=next;
-
+        
         if(n_deposited >= (int) (filling * (float) crd.sites_size()) ) {
             F=0; 
             output<<"End of the deposition, there are "<<n_deposited<<" filled sites "<<std::endl;
@@ -753,8 +891,8 @@ void metropolis::algorithm(){
     }
 }
 
-/**
- * PUBLIC entry point to start the full simulation.
+/*
+ * The public entry point to start the entire simulation workflow .
  */
 void metropolis::simulation(){
     start_of_the_sim();
