@@ -4,7 +4,7 @@ LDFLAGS = -lm
 
 # make debug=1 for activate
 ifdef debug
-    CXXFLAGS += -g3 -O0 -fsanitize=address -fsanitize=undefined
+    CXXFLAGS += -g3 -O2 -fsanitize=address -fsanitize=undefined
     LDFLAGS += -fsanitize=address -fsanitize=undefined
 else
     CXXFLAGS += -O2

@@ -34,16 +34,16 @@ class metropolis{
 
     std::vector<float> barriere;
     static constexpr double Kb = 8.617333262e-5;
-    int n_deposited;
+    int n_deposited = 0;
     float E_b;
     float temperatura;
     float nu_0;
     double F; //deposition rate
     float filling;
-    int n_class;
+    int n_class = 0;
     float total_time;
-    int pos; //current pos
-    int next;
+    int pos = 0; //current pos
+    int next = 0;
     double time=0.0;
     bool deposition=false;
     bool output_file;

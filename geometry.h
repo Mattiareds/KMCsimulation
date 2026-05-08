@@ -40,12 +40,12 @@ class geometry{
 
     //setter
     void set_table_of_nn(int i, int j, const int nn) {
-        table_of_nn.at(i).at(j) = nn;
+        table_of_nn[i][j] = nn;
     }
 
     void append_nn(int i, const int nn){
-        table_of_nn.at(i).push_back(nn);
-        edge_map.at(i).push_back(nn);
+        table_of_nn[i].push_back(nn);
+        edge_map[i].push_back(nn);
     }
 
     void set_TOPl(int site, int plane){
