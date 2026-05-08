@@ -842,7 +842,7 @@ void metropolis::print_configuration(){
     c_crd.output_writer(intermed_config, c_crd.sites_size() + n_deposited, time);
     crd.output_writer_partial(intermed_config, n_deposited, atoms);
     
-    output << "Printed configuration with: " << n_deposited 
+    if(output_file) output << "Printed configuration with: " << n_deposited 
            << " occupated sites, at time: " << time * pow(10, 12) 
            << " picoseconds, = " << time << " seconds " << std::endl;
 }
@@ -852,7 +852,7 @@ void metropolis::print_configuration(){
  * and triggers the first deposition event .
  */
 void metropolis::start_of_the_sim(){
-    output.open("MC_processes.out");
+    if(output_file) output.open("MC_processes.out");
     table_of_processes_filler(); 
     deactivated_sites=s.get_upper_sites();
     atoms.resize(crd.get_N(), false);
@@ -886,7 +886,7 @@ void metropolis::algorithm(){
         
         if(n_deposited >= (int) (filling * (float) crd.sites_size()) ) {
             F=0; 
-            output<<"End of the deposition, there are "<<n_deposited<<" filled sites "<<std::endl;
+            if(output_file) output<<"End of the deposition, there are "<<n_deposited<<" filled sites "<<std::endl;
         }
     }
 }

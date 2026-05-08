@@ -85,7 +85,7 @@ vector<vector<double>> rotate_xy_45deg(vector<vector<double>> v){
 int main(){
 
     // DATA
-    ifstream ifile("dati_piramide.txt");
+    ifstream ifile("coordinates_settings.in");
     double d_pv;
     int n_l;
     int n_cut[4]; 
