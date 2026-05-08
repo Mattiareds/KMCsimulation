@@ -190,9 +190,12 @@ void geometry::initialize_nn(){
 //implementare una funzione che sostituisca tutti i pv di edge con il pv più vicino della faccetta adiacente
 void geometry::pv_substitution(){
     auto table_copy=table_of_nn;
+    edge_map.resize(st->sites_size());
+    for (size_t i=0 ; i<table_of_nn.size() ; i++){
+        edge_map[i].resize(table_of_nn[i].size(), -1);  // Resize each row individually
+    }
     //run on sites
     for (size_t i=0 ; i<table_of_nn.size() ; i++){
-        edge_map.resize(st->sites_size(),std::vector<int>(table_of_nn[i].size(),-1));
         //if my site is not on one edge
         if(type_of_plane[i] < 2){
             //get the nn of my site
