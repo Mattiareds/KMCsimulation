@@ -148,7 +148,7 @@ void metropolis::table_of_processes_filler(){
     table_of_end_pos.resize(crd.sites_size(), std::vector<int>(0,0));
     table_of_initial_pos.resize(crd.sites_size(), std::vector<int>(0,0));
     
-    for(size_t i=0 ; i<crd.sites_size() ; i++){
+    for(long unsigned int i=0 ; i<crd.sites_size() ; i++){
         std::vector<int> nns= s.get_table_of_nn(i);
         for(size_t j=0 ; j<nns.size() ; j++){
             int pv=nns[j];
@@ -787,7 +787,7 @@ void metropolis::time_prob_calc(){
         deposition=true;
     } else {
         deposition=false;
-        int chosen_class;
+        int chosen_class=-1;
         double p_i = 0;
         for(size_t i = 0 ; i < P.size() ; i++){
             if( (p_i < r_p) && (r_p < (p_i+P[i])) ) chosen_class = i;
@@ -797,6 +797,10 @@ void metropolis::time_prob_calc(){
         int mcount = movements_per_class[chosen_class];
         if(mcount <= 0){
             std::cerr << "Warning: chosen_class has no movements: " << chosen_class << std::endl;
+            std::exit(0);
+        }
+        if(chosen_class<0){
+            std::cerr << "Warning: chosen_class has no size "<<std::endl;
             std::exit(0);
         }
         std::uniform_int_distribution<> dist(0, mcount - 1);
