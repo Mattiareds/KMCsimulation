@@ -688,7 +688,7 @@ void metropolis::classification(){
 
             std::vector<int>& top = table_of_processes[site];
 
-            for(size_t j=0 ; j < (int)top.size() ; j++){  
+            for(size_t j=0 ; j < top.size() ; j++){  
                 int base_process = top[j]; 
                 int pv = table_of_end_pos[site][j];
                 
