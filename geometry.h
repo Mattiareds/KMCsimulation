@@ -69,16 +69,6 @@ class geometry{
     const int get_TOPl(int idx) const { return type_of_plane.at(idx); }
     const int get_plane(int i, int j) { return info_plane_sites[i][j]; }
 
-    // Destructor to free allocated memory
-    ~geometry() {
-        if (planes) {
-            for (int i = 0; i < 15; ++i) {
-                delete[] planes[i];
-            }
-            delete[] planes;
-        }
-    }
-
 
 };
 
