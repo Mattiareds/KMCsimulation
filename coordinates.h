@@ -48,6 +48,11 @@ class coordinates{
     }
     const float get_dpv() const {return d_pv;}
 
+    // Destructor to free allocated memory
+    ~coordinates() {
+        delete[] n_cut;
+    }
+
 
 };
 

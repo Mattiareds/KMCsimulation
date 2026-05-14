@@ -780,6 +780,10 @@ void metropolis::time_prob_calc(){
     
     // Time increment based on the sum of all possible event rates
     time += ( -(log(r_time)) / P_tot);
+    if(time>total_time) {
+        std::cerr<<" Too much long time increment: "<<time<<" with a total available time for the simulation of: "<<total_time<<std::endl;
+        std::exit(0);
+    }
 
     double random = dist_time(rng);
     double r_p = random * P_tot;
