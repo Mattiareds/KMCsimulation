@@ -71,6 +71,7 @@ class metropolis{
     void deposition_func();
     void print_output();
     void print_configuration();
+    void print_final_configuration();
     void print_final_output();
     void barrier_chooser(int cl, int &i, int& j);
     void get_process_name(int cl);

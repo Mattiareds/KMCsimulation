@@ -855,6 +855,22 @@ void metropolis::print_configuration(){
            << " picoseconds, = " << time << " seconds " << std::endl;
 }
 
+void metropolis::print_final_configuration(){
+    std::string str1 = std::to_string(n_deposited);
+    int numZeros = std::max(0, 4 - static_cast<int>(str1.length()));
+    str1.insert(0, numZeros, '0');
+    
+    std::string fileName = "occ" + str1 + "FINAL.out";
+    std::ofstream intermed_config(fileName);
+    
+    c_crd.output_writer(intermed_config, c_crd.sites_size() + n_deposited, time);
+    crd.output_writer_partial(intermed_config, n_deposited, atoms);
+    
+    if(output_file) output << "Printed configuration with: " << n_deposited 
+           << " occupated sites, at time: " << time * pow(10, 12) 
+           << " picoseconds, = " << time << " seconds " << std::endl;
+}
+
 /*
  * Sets up the initial simulation state, initializes the nanoparticle, 
  * and triggers the first deposition event .
@@ -892,7 +908,7 @@ void metropolis::algorithm(){
         nn_updater(deposition);
         pos=next;
         
-        if(n_deposited >= (int) (filling * (float) crd.sites_size()) ) {
+        if(n_deposited == (int) (filling * (float) crd.sites_size()) ) {
             F=0; 
             if(output_file) output<<"End of the deposition, there are "<<n_deposited<<" filled sites "<<std::endl;
         }
@@ -906,5 +922,5 @@ void metropolis::simulation(){
     start_of_the_sim();
     algorithm();
     if(output_file) print_output();
-    print_configuration();
+    print_final_configuration();
 }
