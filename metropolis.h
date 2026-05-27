@@ -47,6 +47,7 @@ class metropolis{
     double time=0.0;
     bool deposition=false;
     bool output_file;
+    bool fill_first_layer;
     std::string process_name;
     std::ofstream output;
 
@@ -61,6 +62,7 @@ class metropolis{
     void second_layer_activation();
     void classification();
     void probability_filler();
+    void first_layer_filler();
     void start_of_the_sim();
     void time_prob_calc();
     void map_of_class_eraser(int c, int i, int j);

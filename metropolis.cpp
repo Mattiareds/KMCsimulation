@@ -29,10 +29,13 @@ void metropolis::file_reader(std::ifstream& ifile){
         ifile>>n_class;
         ifile>>total_time;
 
-        std::string file;
-        ifile>>file;
-        if(file=="T") output_file=true;
-        else if(file=="F") output_file=false;
+        std::string bool_tracker;
+        ifile>>bool_tracker;
+        if(bool_tracker=="T") output_file=true;
+        else if(bool_tracker=="F") output_file=false;
+        ifile>>bool_tracker;
+        if(bool_tracker=="T") fill_first_layer=true;
+        else if(bool_tracker=="F") fill_first_layer=false;
 
         for (int i=0; i<100; i++) movements_per_class[i]=0;
         for (int i=0 ; i< 100; i++){ for(int j=0 ; j<1000 ; j++){for (int k=0; k<2; k++) map_class_processes[i][j][k]=-1;}}
@@ -782,6 +785,7 @@ void metropolis::time_prob_calc(){
     time += ( -(log(r_time)) / P_tot);
     if(time>total_time) {
         std::cerr<<" Too much long time increment: "<<time<<" with a total available time for the simulation of: "<<total_time<<std::endl;
+        print_final_configuration();
         std::exit(0);
     }
 
@@ -871,6 +875,16 @@ void metropolis::print_final_configuration(){
            << " picoseconds, = " << time << " seconds " << std::endl;
 }
 
+void metropolis::first_layer_filler(){
+    for(int i=0 ; i<crd.get_N() ; i++){
+        if(s.get_TOPl(i)<2){
+            atoms[i] = true;
+            n_deposited++;
+        }
+    }
+}
+
+
 /*
  * Sets up the initial simulation state, initializes the nanoparticle, 
  * and triggers the first deposition event .
@@ -880,11 +894,13 @@ void metropolis::start_of_the_sim(){
     table_of_processes_filler(); 
     deactivated_sites=s.get_upper_sites();
     atoms.resize(crd.get_N(), false);
+    if(fill_first_layer) first_layer_filler();
     deposition_func();
     interested_sites_calc(true);
     nnn_atoms.resize(atoms.size());
     nn_updater(deposition);
 }
+
 
 /*
  * The main Kinetic Monte Carlo loop. It iterates through process 

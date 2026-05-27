@@ -1,13 +1,14 @@
 11
 0.14    0.55    0.24    0.07    0.64    0.59    0.34    0.46    0.20    0.24    0.35
 0.2
-20
+0.01
 0.32
-300
+330
 1e12
 78
-0.05
+1200
 F
+T
 
 ////////////////////////////
 number_of_barriers
@@ -20,3 +21,4 @@ prefactor TST (1/s)
 n diffusion classes
 total time (s)
 output file (T/F)
+fill first layer (T/F)
