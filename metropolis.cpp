@@ -64,6 +64,20 @@ void metropolis::interested_sites_calc(bool dep){
             if(nn_next[i]!=pos && nn_next[i]!=next && !already_here) interested_sites.push_back(nn_next[i]);
         }
     }
+
+    if (dropped_from != -1) {
+        auto nn_drop = s.get_table_of_nn(dropped_from);
+        for(size_t i = 0; i < nn_drop.size(); i++){
+            bool already_here = false;
+            for(size_t l = 0; l < interested_sites.size(); l++) {
+                if(nn_drop[i] == interested_sites[l]) { already_here = true; break; }
+            }
+            if(nn_drop[i] != pos && nn_drop[i] != next && !already_here) {
+                interested_sites.push_back(nn_drop[i]);
+            }
+        }
+        interested_sites.push_back(dropped_from);
+    }
 }
 
 /*
@@ -84,6 +98,13 @@ void metropolis::nn_updater(bool dep){
     if(!dep){
         auto nn_next = s.get_table_of_nn(next);
         sites_to_update.insert(nn_next.begin(), nn_next.end());
+    }
+
+    //id dropped
+    if (dropped_from != -1) {
+        auto nn_drop = s.get_table_of_nn(dropped_from);
+        sites_to_update.insert(nn_drop.begin(), nn_drop.end());
+        sites_to_update.insert(dropped_from);
     }
 
     // Update each site coordination precisely once
@@ -454,7 +475,6 @@ void metropolis::second_layer_updates(int upper_site){
  * reaches a coordination of 4, it is no longer considered "virtual" 
  * and enters the simulation dynamics .
  */
-
  void metropolis::second_layer_activation(){
     for (size_t i=0 ; i<deactivated_sites.size() ; i++){
         int counter = 0;
@@ -465,6 +485,74 @@ void metropolis::second_layer_updates(int upper_site){
         if(counter >= 4){
             second_layer_updates(upper_site); 
             deactivated_sites.erase(deactivated_sites.begin()+i);
+        }
+    }
+}
+
+void metropolis::second_layer_deactivation(int deserted_site) {
+    auto nn = s.get_table_of_nn(deserted_site);
+    
+    for (int upper_site : nn) {
+        // Verifica se è un sito del secondo strato (assumendo TOPl 14 o 15)
+        if (s.get_TOPl(upper_site) == 14 || s.get_TOPl(upper_site) == 15) {
+            // Se il sito è correntemente attivo
+            if (!is_deactivated(upper_site)) {
+                
+                // Ricalcola il supporto
+                int counter = 0;
+                for (int j : s.get_table_of_nn(upper_site)) {
+                    if (atoms[j]) counter++;
+                }
+                
+                // Condizione non più fisica: meno di 4 supporti
+                if (counter < 4) {
+                    
+                    // Se il sito è occupato, l'atomo cade giù
+                    if (atoms[upper_site]) {
+                        // Cerca un sito di supporto vuoto (almeno deserted_site lo sarà)
+                        int target = -1;
+                        for (int j : s.get_table_of_nn(upper_site)) {
+                            if (!atoms[j]) { target = j; break; }
+                        }
+                        
+                        if (target != -1) {
+                            atoms[upper_site] = false;
+                            atoms[target] = true;
+                            
+                            if (output_file) {
+                                output << "Drop down: da " << upper_site << " a " << target 
+                                       << " al tempo: " << time << std::endl;
+                            }
+                            
+                            // Rimuovi processi attivi KMC legati alla vecchia e nuova posizione
+                            map_of_class_position_eraser(upper_site, nnn_atoms[upper_site]);
+                            map_of_class_next_eraser(target);
+                            
+                            // Salva traccia per il ricalcolo degli interessati
+                            dropped_from = upper_site;
+                        }
+                    }
+                    
+                    // Pulizia totale dei processi per il sito disattivato
+                    for (int t = 0; t <= 6; t++) map_of_class_position_eraser(upper_site, t);
+                    map_of_class_next_eraser(upper_site);
+                    
+                    // Rimuoviamo il sito dalle tabelle statiche dei vicini
+                    for (int pv : table_of_end_pos[upper_site]) {
+                        auto& init_pos = table_of_initial_pos[pv];
+                        auto it = init_pos.begin();
+                        while (it != init_pos.end()) {
+                            if (*it == upper_site) it = init_pos.erase(it);
+                            else ++it;
+                        }
+                    }
+                    table_of_processes[upper_site].clear();
+                    table_of_end_pos[upper_site].clear();
+                    
+                    // Rimettiamo il sito nella lista dei disattivati
+                    deactivated_sites.push_back(upper_site);
+                }
+            }
         }
     }
 }
@@ -946,25 +1034,30 @@ void metropolis::start_of_the_sim(){
  * until the total simulation time is reached .
  */
 void metropolis::algorithm(){
-    while(time<total_time){
+    while(time < total_time){
+        dropped_from = -1;
+        
         classification();
         probability_filler();
         time_prob_calc();
+        
         if(deposition){
             deposition_func();
             print_configuration();
-        } else{
+        } else {
             atoms[pos] = false;
             atoms[next]= true;
+            second_layer_deactivation(pos); 
         }
+        
         second_layer_activation();
         interested_sites_calc(deposition);
         nn_updater(deposition);
-        pos=next;
+        pos = next;
         
-        if(n_deposited == (int) (filling * (float) crd.sites_size()) ) {
-            F=0; 
-            if(output_file) output<<"End of the deposition, there are "<<n_deposited<<" filled sites "<<std::endl;
+        if(n_deposited == (int)(filling * (float) crd.sites_size())) {
+            F = 0; 
+            if(output_file) output << "End of the deposition, there are " << n_deposited << " filled sites " << std::endl;
         }
     }
 }

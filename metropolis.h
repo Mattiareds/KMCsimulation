@@ -48,6 +48,7 @@ class metropolis{
     bool deposition=false;
     bool output_file;
     bool fill_first_layer;
+    int dropped_from = -1;
     std::string process_name;
     std::ofstream output;
 
@@ -60,6 +61,7 @@ class metropolis{
     void algorithm();
     void second_layer_updates(int i);
     void second_layer_activation();
+    void second_layer_deactivation(int deserted_site);
     void classification();
     void probability_filler();
     void first_layer_filler();
