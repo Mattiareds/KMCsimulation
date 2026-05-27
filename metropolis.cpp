@@ -114,6 +114,7 @@ void metropolis::nn_updater(bool dep){
                     count++;
                 }
         }
+        if(s.get_TOPl(site)==14 || s.get_TOPl(site)==15) count = count - 4;
         nnn_atoms[site] = count;
     }
 }
@@ -408,6 +409,7 @@ void metropolis::second_layer_updates(int upper_site){
     for (int pv : nn){
         if(s.get_TOPl(upper_site)==s.get_TOPl(pv)){
             if(is_deactivated(pv)==false){
+                //std::cout<< "process " << 36 << " from "<< upper_site << " to " << pv <<std::endl; 
                 table_of_processes[upper_site].push_back(36); 
                 table_of_end_pos[upper_site].push_back(pv);
                 table_of_initial_pos[pv].push_back(upper_site);
@@ -415,6 +417,7 @@ void metropolis::second_layer_updates(int upper_site){
         }
         else if((s.get_TOPl(upper_site)==14 && s.get_TOPl(pv)==15) ){
             if(is_deactivated(pv)==false){
+                //std::cout<< "process " << 53 << " from "<< upper_site << " to " << pv <<std::endl; 
                 table_of_processes[upper_site].push_back(53); 
                 table_of_end_pos[upper_site].push_back(pv);
                 table_of_initial_pos[pv].push_back(upper_site);
@@ -422,6 +425,7 @@ void metropolis::second_layer_updates(int upper_site){
         }
         else if((s.get_TOPl(upper_site)==15 && s.get_TOPl(pv)==14)){
             if(is_deactivated(pv)==false){
+                //std::cout<< "process " << 45 << " from "<< upper_site << " to " << pv <<std::endl; 
                 table_of_processes[upper_site].push_back(45); 
                 table_of_end_pos[upper_site].push_back(pv);
                 table_of_initial_pos[pv].push_back(upper_site);
@@ -450,7 +454,8 @@ void metropolis::second_layer_updates(int upper_site){
  * reaches a coordination of 4, it is no longer considered "virtual" 
  * and enters the simulation dynamics .
  */
-void metropolis::second_layer_activation(){
+
+ void metropolis::second_layer_activation(){
     for (size_t i=0 ; i<deactivated_sites.size() ; i++){
         int counter = 0;
         int upper_site = deactivated_sites[i];
@@ -463,6 +468,37 @@ void metropolis::second_layer_activation(){
         }
     }
 }
+
+/*
+void metropolis::second_layer_activation() {
+    std::vector<int> to_remove;
+
+    for (size_t i = 0; i < deactivated_sites.size(); i++) {
+        int counter = 0;
+        int upper_site = deactivated_sites[i];
+        for (int j : s.get_table_of_nn(upper_site)) {
+            if (atoms[j] == true) counter++;
+        }
+        if (counter >= 4) {
+            second_layer_updates(upper_site);
+            to_remove.push_back(upper_site); 
+        }
+    }
+
+    //re-calculate all the processes if more than 1 site have been activated
+    for (auto site : to_remove) {
+        second_layer_updates(site);
+    }
+
+    deactivated_sites.erase(
+        std::remove_if(deactivated_sites.begin(), deactivated_sites.end(),
+            [&](int site) {
+                return std::find(to_remove.begin(), to_remove.end(), site) != to_remove.end();
+            }),
+        deactivated_sites.end()
+    );
+}
+*/
 
 /*
  * Maps a process class to the correct energy barrier ID and neighbor multiplier. 
@@ -698,6 +734,7 @@ void metropolis::classification(){
                 if(!atoms[pv]){ 
                     int actual_class = base_process + nn_count; 
                     if(actual_class >= 0 && actual_class < 100) {
+                        //if(actual_class>35 && actual_class < 60) std::cout<< "process " << actual_class << "site    " << site<< " neighbors "<<nn_count << std::endl;
                         map_of_class_filler(actual_class, site, pv);                        
                     } else {
                         std::cerr << "Error: Class " << actual_class << " exceeds array size!" << std::endl;
@@ -877,10 +914,11 @@ void metropolis::print_final_configuration(){
 
 void metropolis::first_layer_filler(){
     for(int i=0 ; i<crd.get_N() ; i++){
-        if(s.get_TOPl(i)<2){
+        if(s.get_TOPl(i)==0 || s.get_TOPl(i)==7){
             atoms[i] = true;
             n_deposited++;
         }
+        second_layer_activation();
     }
 }
 
