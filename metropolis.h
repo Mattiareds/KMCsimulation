@@ -49,6 +49,7 @@ class metropolis{
     bool output_file;
     bool fill_first_layer;
     int dropped_from = -1;
+    int dropped_target = -1; 
     std::string process_name;
     std::ofstream output;
 

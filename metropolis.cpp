@@ -78,6 +78,16 @@ void metropolis::interested_sites_calc(bool dep){
         }
         interested_sites.push_back(dropped_from);
     }
+
+    if (dropped_target != -1) {
+        auto nn_tgt = s.get_table_of_nn(dropped_target);
+        for(size_t i=0 ; i<nn_tgt.size() ; i++){
+            bool already_here=false;
+            for(size_t l=0 ; l< interested_sites.size() ; l++) if(nn_tgt[i]==interested_sites[l]) { already_here=true; break; }
+            if(nn_tgt[i]!=pos && nn_tgt[i]!=next && !already_here) interested_sites.push_back(nn_tgt[i]);
+        }
+        interested_sites.push_back(dropped_target);
+    }
 }
 
 /*
@@ -105,6 +115,12 @@ void metropolis::nn_updater(bool dep){
         auto nn_drop = s.get_table_of_nn(dropped_from);
         sites_to_update.insert(nn_drop.begin(), nn_drop.end());
         sites_to_update.insert(dropped_from);
+    }
+
+    if (dropped_target != -1) {
+        auto nn_tgt = s.get_table_of_nn(dropped_target);
+        sites_to_update.insert(nn_tgt.begin(), nn_tgt.end());
+        sites_to_update.insert(dropped_target);
     }
 
     // Update each site coordination precisely once
@@ -525,16 +541,19 @@ void metropolis::second_layer_deactivation(int deserted_site) {
                             }
                             
                             // Rimuovi processi attivi KMC legati alla vecchia e nuova posizione
-                            map_of_class_position_eraser(upper_site, nnn_atoms[upper_site]);
+                            for(int t = 0; t <= 12; t++){
+                                map_of_class_position_eraser(upper_site, t);
+                            }
                             map_of_class_next_eraser(target);
                             
                             // Salva traccia per il ricalcolo degli interessati
                             dropped_from = upper_site;
+                            dropped_target = target;
                         }
                     }
                     
                     // Pulizia totale dei processi per il sito disattivato
-                    for (int t = 0; t <= 6; t++) map_of_class_position_eraser(upper_site, t);
+                    for (int t = 0; t <= 12; t++) map_of_class_position_eraser(upper_site, t);
                     map_of_class_next_eraser(upper_site);
                     
                     // Rimuoviamo il sito dalle tabelle statiche dei vicini
@@ -751,7 +770,7 @@ void metropolis::map_of_class_position_eraser(int i, int n_nn) {
 void metropolis::map_of_class_next_eraser(int i) {
     auto copy_tip=table_of_initial_pos[i];
     for(int i_site : copy_tip){
-        for(int n=0; n<= nnn_atoms[i_site]; n++){
+        for(int n=0; n<= 12; n++){
             for(size_t i_prc=0 ; i_prc < table_of_end_pos[i_site].size() ; i_prc++) if(table_of_end_pos[i_site][i_prc]==i){
                 map_of_class_eraser(table_of_processes[i_site][i_prc] + n, i_site , i);
             }
@@ -811,7 +830,7 @@ void metropolis::classification(){
         if(atoms[site]){
             int nn_count = nnn_atoms[site];
             
-            for(int t=0 ; t <= 6 ; t++) map_of_class_position_eraser(site, t);
+            for(int t=0 ; t <= 12 ; t++) map_of_class_position_eraser(site, t);
 
             std::vector<int>& top = table_of_processes[site];
 
@@ -952,7 +971,9 @@ void metropolis::time_prob_calc(){
         get_process_name(chosen_class);
         if(output_file) print_output();
         
-        map_of_class_position_eraser(pos, nnn_atoms[pos]);
+        for(int t=0 ; t <= 12 ; t++){
+            map_of_class_position_eraser(pos, t);
+        }
         map_of_class_next_eraser(next);
     }
 }
@@ -1036,6 +1057,7 @@ void metropolis::start_of_the_sim(){
 void metropolis::algorithm(){
     while(time < total_time){
         dropped_from = -1;
+        dropped_target = -1;
         
         classification();
         probability_filler();
