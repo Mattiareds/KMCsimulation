@@ -507,7 +507,7 @@ void metropolis::second_layer_updates(int upper_site){
 
 void metropolis::second_layer_deactivation(int deserted_site) {
     auto nn = s.get_table_of_nn(deserted_site);
-    
+    bool fallen_down = false;
     for (int upper_site : nn) {
         // Verifica se è un sito del secondo strato (assumendo TOPl 14 o 15)
         if (s.get_TOPl(upper_site) == 14 || s.get_TOPl(upper_site) == 15) {
@@ -526,35 +526,26 @@ void metropolis::second_layer_deactivation(int deserted_site) {
                     // Se il sito è occupato, l'atomo cade giù
                     if (atoms[upper_site]) {
                         // Cerca un sito di supporto vuoto (almeno deserted_site lo sarà)
-                        int target = -1;
-                        for (int j : s.get_table_of_nn(upper_site)) {
-                            if (!atoms[j]) { target = j; break; }
-                        }
+                        atoms[upper_site] = false;
+                        atoms[deserted_site] = true;
+                        fallen_down = true;
                         
-                        if (target != -1) {
-                            atoms[upper_site] = false;
-                            atoms[target] = true;
-                            
-                            if (output_file) {
-                                output << "Drop down: da " << upper_site << " a " << target 
-                                       << " al tempo: " << time << std::endl;
-                            }
-                            
-                            // Rimuovi processi attivi KMC legati alla vecchia e nuova posizione
-                            for(int t = 0; t <= 12; t++){
-                                map_of_class_position_eraser(upper_site, t);
-                            }
-                            map_of_class_next_eraser(target);
-                            
-                            // Salva traccia per il ricalcolo degli interessati
-                            dropped_from = upper_site;
-                            dropped_target = target;
+                        if (output_file) {
+                            output << "Drop down: da " << upper_site << " a " << deserted_site 
+                                   << " al tempo: " << time << std::endl;
                         }
+//                        std::cout << "Drop down: da " << upper_site << " a " << deserted_site 
+//                                   << " al tempo: " << time << "con processo "<< pos << " to "<< next<< std::endl;
+
+                        // Salva traccia per il ricalcolo degli interessati
+                        dropped_from = upper_site;
+                        dropped_target = deserted_site;
                     }
                     
                     // Pulizia totale dei processi per il sito disattivato
-                    for (int t = 0; t <= 12; t++) map_of_class_position_eraser(upper_site, t);
-                    map_of_class_next_eraser(upper_site);
+                    //for (int t = 0; t <= 12; t++) map_of_class_position_eraser(upper_site, t);
+                    //map_of_class_next_eraser(dropped_target);
+                    //map_of_class_next_eraser(upper_site);
                     
                     // Rimuoviamo il sito dalle tabelle statiche dei vicini
                     for (int pv : table_of_end_pos[upper_site]) {
@@ -567,12 +558,10 @@ void metropolis::second_layer_deactivation(int deserted_site) {
                     }
                     table_of_processes[upper_site].clear();
                     table_of_end_pos[upper_site].clear();
-                    
-                    // Rimettiamo il sito nella lista dei disattivati
-                    deactivated_sites.push_back(upper_site);
                 }
             }
         }
+        if(fallen_down) break;
     }
 }
 
@@ -958,7 +947,24 @@ void metropolis::time_prob_calc(){
         std::uniform_int_distribution<> dist(0, mcount - 1);
         int movement = dist(rng);
         if(atoms[map_class_processes[chosen_class][movement][0]]==false){
-            std::cerr<<"Atomo inesistente... "<<std::endl;
+            std::cerr<<"Atomo inesistente...  classe "<<chosen_class << " movement "<<movement<<std::endl;
+            print_configuration();
+            /*
+            for (size_t i=0 ; i<100 ; i++){
+                bool print=false;
+                for (size_t j=0 ; j<1000 ; j++){
+                    for (size_t t=0 ; t<2 ; t++){
+                        if (map_class_processes[i][j][t] > 0 ){
+                             std::cout<< "class "<< i <<" movement  "<<j<<" : "<< map_class_processes[i][j][t]<<" ";
+                             print=true;
+                        }
+                    }
+                    if(print) std::cout<<"        ";
+                }
+                if (print) std::cout<<std::endl;
+            }
+            */
+
             std::exit(0);
         }
         if(movement < 0 || movement >= get_MCP_size(chosen_class)){
@@ -1068,10 +1074,10 @@ void metropolis::algorithm(){
             print_configuration();
         } else {
             atoms[pos] = false;
-            atoms[next]= true;
-            second_layer_deactivation(pos); 
+            atoms[next]= true; 
         }
         
+        second_layer_deactivation(pos);
         second_layer_activation();
         interested_sites_calc(deposition);
         nn_updater(deposition);
