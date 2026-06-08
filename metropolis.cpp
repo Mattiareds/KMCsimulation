@@ -152,6 +152,7 @@ void metropolis::nn_updater(bool dep){
                 }
         }
         if(s.get_TOPl(site)==14 || s.get_TOPl(site)==15) count = count - 4;
+        if(s.get_TOPl(site)==10) count = count -1;
         nnn_atoms[site] = count;
     }
 }
@@ -362,7 +363,7 @@ void metropolis::table_of_processes_updater(int i){
                 table_of_initial_pos[pv].push_back(i);
             }
         }
-        else if((s.get_TOPl(i)==8|| s.get_TOPl(i)==8) && s.get_TOPl(pv)==1) {
+        else if((s.get_TOPl(i)==8 || s.get_TOPl(i)==10) && s.get_TOPl(pv)==1) {
             bool already_present = false;
             for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                 if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 8){
