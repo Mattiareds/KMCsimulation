@@ -59,10 +59,14 @@ void metropolis::interested_sites_calc(bool dep){
     if(!dep){
         auto nn_next = s.get_table_of_nn(next);
         for(size_t i=0 ; i<nn_next.size() ; i++){
+            interested_sites.push_back(next);
             bool already_here=false;
             for(size_t l=0 ; l< interested_sites.size() ; l++) if(nn_next[i]==interested_sites[l]) { already_here=true; break; }
             if(nn_next[i]!=pos && nn_next[i]!=next && !already_here) interested_sites.push_back(nn_next[i]);
         }
+        //if(s.get_TOPl(next)==14 || s.get_TOPl(next)==15){
+        //    std::cout<<"interested site filled "<< next <<std::endl;
+        //}
     }
 
     if (dropped_from != -1) {
@@ -153,6 +157,7 @@ void metropolis::nn_updater(bool dep){
         }
         if(s.get_TOPl(site)==14 || s.get_TOPl(site)==15) count = count - 4;
         if(s.get_TOPl(site)==10) count = count -1;
+        if(count<0) count=0;
         nnn_atoms[site] = count;
     }
 }
@@ -447,7 +452,7 @@ void metropolis::second_layer_updates(int upper_site){
     for (int pv : nn){
         if(s.get_TOPl(upper_site)==s.get_TOPl(pv)){
             if(is_deactivated(pv)==false){
-                //std::cout<< "process " << 36 << " from "<< upper_site << " to " << pv <<std::endl; 
+                //std::cout<< "process " << 36 << " from "<< upper_site << " to " << pv <<"-------------------------------------------------------------------------------------------------------------------------------------------------"<<std::endl; 
                 table_of_processes[upper_site].push_back(36); 
                 table_of_end_pos[upper_site].push_back(pv);
                 table_of_initial_pos[pv].push_back(upper_site);
@@ -455,7 +460,7 @@ void metropolis::second_layer_updates(int upper_site){
         }
         else if((s.get_TOPl(upper_site)==14 && s.get_TOPl(pv)==15) ){
             if(is_deactivated(pv)==false){
-                //std::cout<< "process " << 53 << " from "<< upper_site << " to " << pv <<std::endl; 
+                //std::cout<< "process " << 53 << " from "<< upper_site << " to " << pv <<"-------------------------------------------------------------------------------------------------------------------------------------------------"<<std::endl; 
                 table_of_processes[upper_site].push_back(53); 
                 table_of_end_pos[upper_site].push_back(pv);
                 table_of_initial_pos[pv].push_back(upper_site);
@@ -463,7 +468,7 @@ void metropolis::second_layer_updates(int upper_site){
         }
         else if((s.get_TOPl(upper_site)==15 && s.get_TOPl(pv)==14)){
             if(is_deactivated(pv)==false){
-                //std::cout<< "process " << 45 << " from "<< upper_site << " to " << pv <<std::endl; 
+                //std::cout<< "process " << 45 << " from "<< upper_site << " to " << pv <<"-------------------------------------------------------------------------------------------------------------------------------------------------"<<std::endl; 
                 table_of_processes[upper_site].push_back(45); 
                 table_of_end_pos[upper_site].push_back(pv);
                 table_of_initial_pos[pv].push_back(upper_site);
@@ -492,7 +497,41 @@ void metropolis::second_layer_updates(int upper_site){
  * reaches a coordination of 4, it is no longer considered "virtual" 
  * and enters the simulation dynamics .
  */
+ 
+ 
  void metropolis::second_layer_activation(){
+    std::vector<int> activated_sites;
+
+for(int upper_site : deactivated_sites){
+    int counter = 0;
+
+    for(int j : s.get_table_of_nn(upper_site)){
+        if(atoms[j]) counter++;
+    }
+
+    if(counter >= 4){
+        activated_sites.push_back(upper_site);
+    }
+}
+
+for(int upper_site : activated_sites){
+    second_layer_updates(upper_site);
+}
+
+deactivated_sites.erase(
+    std::remove_if(
+        deactivated_sites.begin(),
+        deactivated_sites.end(),
+        [&](int s){
+            return std::find(
+                activated_sites.begin(),
+                activated_sites.end(),
+                s
+            ) != activated_sites.end();
+        }),
+    deactivated_sites.end()
+);
+    /*
     for (size_t i=0 ; i<deactivated_sites.size() ; i++){
         int counter = 0;
         int upper_site = deactivated_sites[i];
@@ -504,6 +543,7 @@ void metropolis::second_layer_updates(int upper_site){
             deactivated_sites.erase(deactivated_sites.begin()+i);
         }
     }
+        */
 }
 
 void metropolis::second_layer_deactivation(int deserted_site) {
@@ -521,6 +561,7 @@ void metropolis::second_layer_deactivation(int deserted_site) {
                     if (atoms[j]) counter++;
                 }
                 
+
                 // Condizione non più fisica: meno di 4 supporti
                 if (counter < 4) {
                     
@@ -557,8 +598,23 @@ void metropolis::second_layer_deactivation(int deserted_site) {
                             else ++it;
                         }
                     }
+                    std::cout
+                    << "DEACTIVATING SITE "
+                    << upper_site
+                    << " counter="
+                    << counter
+                    << " TOPl="
+                    << s.get_TOPl(upper_site)
+                    << std::endl;
                     table_of_processes[upper_site].clear();
                     table_of_end_pos[upper_site].clear();
+                    deactivated_sites.push_back(upper_site);
+                    std::cout
+                    << "CLEARED PROCESS TABLE OF "
+                    << upper_site
+                    << " size was "
+                    << table_of_processes[upper_site].size()
+                    << std::endl;
                 }
             }
         }
@@ -822,17 +878,30 @@ void metropolis::classification(){
             
             for(int t=0 ; t <= 12 ; t++) map_of_class_position_eraser(site, t);
 
+            //if(s.get_TOPl(site)==14 || s.get_TOPl(site)==15){
+            //    std::cout<<"batti un colpo "<< site << "                    -/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////"<<std::endl;
+            //}
+
             std::vector<int>& top = table_of_processes[site];
 
             for(size_t j=0 ; j < top.size() ; j++){  
                 int base_process = top[j]; 
                 int pv = table_of_end_pos[site][j];
                 
+                //if(s.get_TOPl(site)==14 || s.get_TOPl(site)==15){
+                //    std::cout << "site=" << site << " TOPl=" << s.get_TOPl(site)
+                //  << " base_process=" << base_process
+                //  << " pv=" << pv << " atoms[pv]=" << atoms[pv]
+                //  << " nn_count=" << nn_count
+                //  << " actual_class=" << base_process + nn_count
+                //  << std::endl;
+                //}
+
                 if(!atoms[pv]){ 
                     int actual_class = base_process + nn_count; 
                     if(actual_class >= 0 && actual_class < 100) {
                         //if(actual_class>35 && actual_class < 60) std::cout<< "process " << actual_class << "site    " << site<< " neighbors "<<nn_count << std::endl;
-                        map_of_class_filler(actual_class, site, pv);                        
+                        map_of_class_filler(actual_class, site, pv);   
                     } else {
                         std::cerr << "Error: Class " << actual_class << " exceeds array size!" << std::endl;
                     }
@@ -1062,11 +1131,29 @@ void metropolis::start_of_the_sim(){
  * until the total simulation time is reached .
  */
 void metropolis::algorithm(){
+    bool go=false;
     while(time < total_time){
         dropped_from = -1;
-        dropped_target = -1;
+        dropped_target = -1;                 
         
         classification();
+        
+        //if(go){
+        ////  QUI MI SERVE!
+        //std::cout << "=== map_class_processes (non-empty) at time " << time << " ===" << std::endl;
+        //for(int c = 0; c < 100; c++) {
+        //    int sz = get_MCP_size(c);
+        //    if(sz > 0) {
+        //        std::cout << "  Class " << c << " [" << sz << " processes]: ";
+        //        for(int j = 0; j < sz; j++) {
+        //            std::cout << "(" << map_class_processes[c][j][0]
+        //                   << "->" << map_class_processes[c][j][1] << ") ";
+        //        }
+        //        std::cout << std::endl;
+        //    }
+        //}
+        //}
+
         probability_filler();
         time_prob_calc();
         
@@ -1078,15 +1165,16 @@ void metropolis::algorithm(){
             atoms[next]= true; 
         }
         
-        second_layer_deactivation(pos);
+        //second_layer_deactivation(pos);
         second_layer_activation();
         interested_sites_calc(deposition);
         nn_updater(deposition);
         pos = next;
         
-        if(n_deposited == (int)(filling * (float) crd.sites_size())) {
+        if(n_deposited == (int)(filling * (float) crd.sites_size()) && !go) {
             F = 0; 
             if(output_file) output << "End of the deposition, there are " << n_deposited << " filled sites " << std::endl;
+            go= true;
         }
     }
 }

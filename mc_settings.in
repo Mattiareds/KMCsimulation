@@ -1,11 +1,11 @@
 11
 0.14    0.55    0.24    0.07    0.64    0.59    0.34    0.46    0.20    0.24    0.35
 0.2
-0.002
-0.22
+0.0005
+0.145
 340
 1e12
-78
+80
 1800
 F
 F
@@ -21,4 +21,3 @@ prefactor TST (1/s)
 n diffusion classes
 total time (s)
 output file (T/F)
-fill first layer (T/F)
