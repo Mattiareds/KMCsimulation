@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <new>
+#include <algorithm>
 #include <unordered_set>
 
 /*
@@ -327,6 +328,7 @@ void metropolis::table_of_processes_updater(int i){
                 table_of_processes[i].push_back(0); 
                 table_of_end_pos[i].push_back(pv);
                 table_of_initial_pos[pv].push_back(i);
+                //if(s.get_TOPl(i)==10) std::cout<<"edge " << i << " to "<< pv << std::endl;
             }
         }
         else if(s.get_TOPl(i)==8 && s.get_TOPl(pv)==8 && s.get_plane(i,1)!=s.get_plane(pv,1)) {
@@ -353,6 +355,7 @@ void metropolis::table_of_processes_updater(int i){
                 table_of_processes[i].push_back(29); 
                 table_of_end_pos[i].push_back(pv);
                 table_of_initial_pos[pv].push_back(i);
+                //if(s.get_TOPl(i)==10) std::cout<<"edge " << i << " to "<< pv << std::endl;
             }
         }
         else if(s.get_TOPl(i)==7 && (s.get_TOPl(pv)==8 || s.get_TOPl(pv)==10)) {
@@ -379,6 +382,7 @@ void metropolis::table_of_processes_updater(int i){
                 table_of_processes[i].push_back(8); 
                 table_of_end_pos[i].push_back(pv);
                 table_of_initial_pos[pv].push_back(i);
+                //if(s.get_TOPl(i)==10) std::cout<<"edge " << i << " to "<< pv << std::endl;
             }
         }
         else if(s.get_TOPl(i)==10 && s.get_TOPl(pv)>10){ 
@@ -392,6 +396,7 @@ void metropolis::table_of_processes_updater(int i){
                 table_of_processes[i].push_back(66);
                 table_of_end_pos[i].push_back(pv);
                 table_of_initial_pos[pv].push_back(i);
+                //if(s.get_TOPl(i)==10) std::cout<<"edge " << i << " to "<< pv << std::endl;
             }
         }
     }
@@ -435,8 +440,21 @@ std::array<int,2> metropolis::activate_edges(int upper_site, int pv){
             table_of_processes_updater(edge[i]);
             s.reset_edge_map(pv, i);
 
+            //update also nn processes if active
+            for(auto x : s.get_table_of_nn(edge[i])){
+                if(s.get_TOPl(x)==10) table_of_processes_updater(x);
+            }
+
             back[index]=edge[i];
             index++;
+            //std::cout
+            //<< "Activating edge "
+            //<< edge[i]
+            //<< " from pv="
+            //<< pv
+            //<< " upper_site="
+            //<< upper_site
+            //<< std::endl;
         }
         if(index>1) return back;
     }
@@ -453,7 +471,7 @@ void metropolis::second_layer_updates(int upper_site){
         if(s.get_TOPl(upper_site)==s.get_TOPl(pv)){
             if(is_deactivated(pv)==false){
                 //std::cout<< "process " << 36 << " from "<< upper_site << " to " << pv <<"-------------------------------------------------------------------------------------------------------------------------------------------------"<<std::endl; 
-                table_of_processes[upper_site].push_back(36); 
+                table_of_processes[upper_site].push_back(53); //correzione alla sovrastima precedente: uso un'altra barriera
                 table_of_end_pos[upper_site].push_back(pv);
                 table_of_initial_pos[pv].push_back(upper_site);
             }
@@ -461,7 +479,7 @@ void metropolis::second_layer_updates(int upper_site){
         else if((s.get_TOPl(upper_site)==14 && s.get_TOPl(pv)==15) ){
             if(is_deactivated(pv)==false){
                 //std::cout<< "process " << 53 << " from "<< upper_site << " to " << pv <<"-------------------------------------------------------------------------------------------------------------------------------------------------"<<std::endl; 
-                table_of_processes[upper_site].push_back(53); 
+                table_of_processes[upper_site].push_back(53); //correzione alla sovrastima precedente: uso un'altra barriera
                 table_of_end_pos[upper_site].push_back(pv);
                 table_of_initial_pos[pv].push_back(upper_site);
             }
@@ -469,7 +487,7 @@ void metropolis::second_layer_updates(int upper_site){
         else if((s.get_TOPl(upper_site)==15 && s.get_TOPl(pv)==14)){
             if(is_deactivated(pv)==false){
                 //std::cout<< "process " << 45 << " from "<< upper_site << " to " << pv <<"-------------------------------------------------------------------------------------------------------------------------------------------------"<<std::endl; 
-                table_of_processes[upper_site].push_back(45); 
+                table_of_processes[upper_site].push_back(81); //correzione alla sovrastima precedente: uso un'altra barriera
                 table_of_end_pos[upper_site].push_back(pv);
                 table_of_initial_pos[pv].push_back(upper_site);
             }
@@ -670,7 +688,8 @@ void metropolis::barrier_chooser(int cl, int &bar_id , int &neighbours ){
     else if (cl >= 53 && cl <= 59) { bar[0] = 7; bar[1] = cl - 53; }
     else if (cl >= 60 && cl <= 65) { bar[0] = 8; bar[1] = cl - 60; }
     else if (cl >= 66 && cl <= 71) { bar[0] = 9; bar[1] = cl - 66; }
-    else if (cl >= 72) { bar[0] = 10; bar[1] = cl - 72; }
+    else if (cl >= 72 && cl <= 80) { bar[0] = 10; bar[1] = cl - 72; }
+    else if (cl >= 81) { bar[0] = 11; bar[1] = cl - 81; }
     else { bar[0] = 0; bar[1] = cl; }
 
     bar_id=bar[0];
@@ -739,10 +758,16 @@ void metropolis::get_process_name(int cl){
         process_name = "111 mixed to 100 double with: " + num + " nearest neighbors";
         return;
     }
-    else if (cl >= 72)
+    else if (cl >= 72 && cl <=80)
     {
         nn = cl - 72; num=std::to_string(nn);
         process_name = "kink: 100shell to 100core with: " + num + " nearest neighbors";
+        return;
+    }
+    else if (cl >= 81)
+    {
+        nn = cl - 81; num=std::to_string(nn);
+        process_name = "100border to 100center second layer: " + num + " nearest neighbors";
         return;
     }
     else
@@ -1152,6 +1177,7 @@ void metropolis::algorithm(){
         //        std::cout << std::endl;
         //    }
         //}
+        //
         //}
 
         probability_filler();

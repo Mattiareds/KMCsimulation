@@ -53,7 +53,6 @@ class metropolis{
     std::string process_name;
     std::ofstream output;
 
-    //int classes [11]={0, 6, 10, 15, 19, 24, 28, 31, 36, 41, 44}; //classes
     
     void interested_sites_calc(bool diff); 
     void nn_updater(bool b);
