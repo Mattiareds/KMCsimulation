@@ -51,11 +51,11 @@ int main(){
         return 1;
     }
     
-    ofstream output_file("out.out");
-    if (!output_file.is_open()) {
-        cerr << "ERROR: Could not create output file 'out.out'" << endl;
-        return 1;
-    }
+    //ofstream output_file("out.out");
+    //if (!output_file.is_open()) {
+    //    cerr << "ERROR: Could not create output file 'out.out'" << endl;
+    //    return 1;
+    //}
 
     cout << "All input files successfully opened." << endl;
 

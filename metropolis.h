@@ -52,6 +52,7 @@ class metropolis{
     int dropped_target = -1; 
     std::string process_name;
     std::ofstream output;
+    std::ofstream occupation_file;
 
     
     void interested_sites_calc(bool diff); 
@@ -61,6 +62,7 @@ class metropolis{
     void algorithm();
     void second_layer_updates(int i);
     void second_layer_activation();
+    void activate_all();
     void second_layer_deactivation(int deserted_site);
     void classification();
     void probability_filler();
@@ -77,6 +79,7 @@ class metropolis{
     void print_configuration();
     void print_final_configuration();
     void print_final_output();
+    void print_occupation();
     void barrier_chooser(int cl, int &i, int& j);
     void get_process_name(int cl);
     void shifter(int c, int ind, int tg);
@@ -86,6 +89,7 @@ class metropolis{
     std::array<int,2> activate_edges(int upper_site, int pv);
     void table_of_processes_updater(int i);
     void clear_dynamic_processes();
+    int bond_breaking_counter = 0;
 
     public:
     //builder

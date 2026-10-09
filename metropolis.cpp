@@ -9,6 +9,13 @@
 #include <algorithm>
 #include <unordered_set>
 
+int occupation_1B = 0;
+int occupation_1C = 0;
+int occupation_0B = 0;
+int occupation_0C = 0;
+int occupation_AB = 0;
+int occupation_AC = 0;
+
 /*
  * Reads the simulation parameters from the input file.
  * Initializes energy barriers, temperature, flux (F), and sets up the internal 
@@ -460,50 +467,95 @@ std::array<int,2> metropolis::activate_edges(int upper_site, int pv){
     }
     return back;
 }
+//
+///*
+// * Specific update for the second layer of the nanoparticle. It defines how 
+// * atoms on newly created surfaces can move based on local coordination .
+// */
+//void metropolis::second_layer_updates(int upper_site){
+//    auto nn=s.get_table_of_nn(upper_site);
+//    for (int pv : nn){
+//        if(s.get_TOPl(upper_site)==s.get_TOPl(pv)){
+//            if(is_deactivated(pv)==false){
+//                //std::cout<< "process " << 36 << " from "<< upper_site << " to " << pv <<"-------------------------------------------------------------------------------------------------------------------------------------------------"<<std::endl; 
+//                table_of_processes[upper_site].push_back(53); //correzione alla sovrastima precedente: uso un'altra barriera
+//                table_of_end_pos[upper_site].push_back(pv);
+//                table_of_initial_pos[pv].push_back(upper_site);
+//            }
+//        }
+//        else if((s.get_TOPl(upper_site)==14 && s.get_TOPl(pv)==15) ){
+//            if(is_deactivated(pv)==false){
+//                //std::cout<< "process " << 53 << " from "<< upper_site << " to " << pv <<"-------------------------------------------------------------------------------------------------------------------------------------------------"<<std::endl; 
+//                table_of_processes[upper_site].push_back(53); //correzione alla sovrastima precedente: uso un'altra barriera
+//                table_of_end_pos[upper_site].push_back(pv);
+//                table_of_initial_pos[pv].push_back(upper_site);
+//            }
+//        }
+//        else if((s.get_TOPl(upper_site)==15 && s.get_TOPl(pv)==14)){
+//            if(is_deactivated(pv)==false){
+//                //std::cout<< "process " << 45 << " from "<< upper_site << " to " << pv <<"-------------------------------------------------------------------------------------------------------------------------------------------------"<<std::endl; 
+//                table_of_processes[upper_site].push_back(81); //correzione alla sovrastima precedente: uso un'altra barriera
+//                table_of_end_pos[upper_site].push_back(pv);
+//                table_of_initial_pos[pv].push_back(upper_site);
+//            }
+//        }
+//        else if(s.get_TOPl(pv)==0 || s.get_TOPl(pv)==7){ 
+//            table_of_processes[upper_site].push_back(72);
+//            table_of_end_pos[upper_site].push_back(pv);
+//            table_of_initial_pos[pv].push_back(upper_site);
+//        }
+//        if(s.get_TOPl(pv)==7){ 
+//            auto edge_sites = activate_edges(upper_site,pv);
+//            for (auto edge_site : edge_sites){
+//                if(edge_site>=0){
+//                    table_of_processes[upper_site].push_back(22);
+//                    table_of_end_pos[upper_site].push_back(edge_site);
+//                    table_of_initial_pos[edge_site].push_back(upper_site);
+//                }
+//            }
+//        }
+//    }
+//}
 
-/*
- * Specific update for the second layer of the nanoparticle. It defines how 
- * atoms on newly created surfaces can move based on local coordination .
- */
 void metropolis::second_layer_updates(int upper_site){
+    // helper locale: aggiunge il processo solo se non già presente
+    auto add_process = [&](int from, int to, int base_class){
+        for(size_t k=0; k<table_of_end_pos[from].size(); k++){
+            if(table_of_end_pos[from][k]==to && table_of_processes[from][k]==base_class) return;
+        }
+        table_of_processes[from].push_back(base_class);
+        table_of_end_pos[from].push_back(to);
+        table_of_initial_pos[to].push_back(from);
+    };
+
     auto nn=s.get_table_of_nn(upper_site);
     for (int pv : nn){
         if(s.get_TOPl(upper_site)==s.get_TOPl(pv)){
             if(is_deactivated(pv)==false){
-                //std::cout<< "process " << 36 << " from "<< upper_site << " to " << pv <<"-------------------------------------------------------------------------------------------------------------------------------------------------"<<std::endl; 
-                table_of_processes[upper_site].push_back(53); //correzione alla sovrastima precedente: uso un'altra barriera
-                table_of_end_pos[upper_site].push_back(pv);
-                table_of_initial_pos[pv].push_back(upper_site);
+                add_process(upper_site, pv, 53);
+                add_process(pv, upper_site, 53);   // NUOVO: link inverso
             }
         }
         else if((s.get_TOPl(upper_site)==14 && s.get_TOPl(pv)==15) ){
             if(is_deactivated(pv)==false){
-                //std::cout<< "process " << 53 << " from "<< upper_site << " to " << pv <<"-------------------------------------------------------------------------------------------------------------------------------------------------"<<std::endl; 
-                table_of_processes[upper_site].push_back(53); //correzione alla sovrastima precedente: uso un'altra barriera
-                table_of_end_pos[upper_site].push_back(pv);
-                table_of_initial_pos[pv].push_back(upper_site);
+                add_process(upper_site, pv, 53);
+                add_process(pv, upper_site, 81);   // NUOVO: link inverso, classe corretta
             }
         }
         else if((s.get_TOPl(upper_site)==15 && s.get_TOPl(pv)==14)){
             if(is_deactivated(pv)==false){
-                //std::cout<< "process " << 45 << " from "<< upper_site << " to " << pv <<"-------------------------------------------------------------------------------------------------------------------------------------------------"<<std::endl; 
-                table_of_processes[upper_site].push_back(81); //correzione alla sovrastima precedente: uso un'altra barriera
-                table_of_end_pos[upper_site].push_back(pv);
-                table_of_initial_pos[pv].push_back(upper_site);
+                add_process(upper_site, pv, 81);
+                add_process(pv, upper_site, 53);   // NUOVO: link inverso, classe corretta
             }
         }
         else if(s.get_TOPl(pv)==0 || s.get_TOPl(pv)==7){ 
-            table_of_processes[upper_site].push_back(72);
-            table_of_end_pos[upper_site].push_back(pv);
-            table_of_initial_pos[pv].push_back(upper_site);
+            add_process(upper_site, pv, 72);
         }
         if(s.get_TOPl(pv)==7){ 
             auto edge_sites = activate_edges(upper_site,pv);
             for (auto edge_site : edge_sites){
                 if(edge_site>=0){
-                    table_of_processes[upper_site].push_back(22);
-                    table_of_end_pos[upper_site].push_back(edge_site);
-                    table_of_initial_pos[edge_site].push_back(upper_site);
+                    add_process(upper_site, edge_site, 22);
                 }
             }
         }
@@ -517,51 +569,42 @@ void metropolis::second_layer_updates(int upper_site){
  */
  
  
- void metropolis::second_layer_activation(){
+void metropolis::second_layer_activation(){
     std::vector<int> activated_sites;
 
-for(int upper_site : deactivated_sites){
-    int counter = 0;
-
-    for(int j : s.get_table_of_nn(upper_site)){
-        if(atoms[j]) counter++;
-    }
-
-    if(counter >= 4){
-        activated_sites.push_back(upper_site);
-    }
-}
-
-for(int upper_site : activated_sites){
-    second_layer_updates(upper_site);
-}
-
-deactivated_sites.erase(
-    std::remove_if(
-        deactivated_sites.begin(),
-        deactivated_sites.end(),
-        [&](int s){
-            return std::find(
-                activated_sites.begin(),
-                activated_sites.end(),
-                s
-            ) != activated_sites.end();
-        }),
-    deactivated_sites.end()
-);
-    /*
-    for (size_t i=0 ; i<deactivated_sites.size() ; i++){
+    for(int upper_site : deactivated_sites){
         int counter = 0;
-        int upper_site = deactivated_sites[i];
         for(int j : s.get_table_of_nn(upper_site)){
-            if(atoms[j]==true) counter++;
+            if(atoms[j]) counter++;
         }
         if(counter >= 4){
-            second_layer_updates(upper_site); 
-            deactivated_sites.erase(deactivated_sites.begin()+i);
+            activated_sites.push_back(upper_site);
         }
     }
-        */
+
+    deactivated_sites.erase(
+        std::remove_if(
+            deactivated_sites.begin(),
+            deactivated_sites.end(),
+            [&](int s){
+                return std::find(activated_sites.begin(), activated_sites.end(), s) != activated_sites.end();
+            }),
+        deactivated_sites.end()
+    );
+
+    for(int upper_site : activated_sites){
+        second_layer_updates(upper_site);
+    }
+}
+
+void metropolis::activate_all(){
+    std::vector<int> activated_sites = deactivated_sites;  // copia tutta la lista
+
+    deactivated_sites.clear();  
+
+    for(int upper_site : activated_sites){
+        second_layer_updates(upper_site);  
+    }
 }
 
 void metropolis::second_layer_deactivation(int deserted_site) {
@@ -702,12 +745,14 @@ void metropolis::barrier_chooser(int cl, int &bar_id , int &neighbours ){
  */
 void metropolis::get_process_name(int cl){
     std::string num;
-    int nn;
+    int nn = 0;
 
     if (cl >= 8 && cl <=14)
     {
         nn = cl - 8; num=std::to_string(nn);
         process_name = "111border to 111center same facet with: " + num + " nearest neighbors";
+        //occupation_1B--;
+        //occupation_1C++;
         return;
     }
     else if (cl >= 15 && cl <= 21)
@@ -720,12 +765,16 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 22; num=std::to_string(nn);
         process_name = "100 to 111 with: " + num + " nearest neighbors";
+        //occupation_0B--;
+        //occupation_1B++;
         return;
     }
     else if (cl >= 29 && cl <= 35)
     {
         nn = cl - 29; num=std::to_string(nn);
         process_name = "111 to 100 with: " + num + " nearest neighbors";
+        //occupation_1B--;
+        //occupation_0B++;
         return;
     }
     else if (cl >= 36 && cl <= 44)
@@ -738,43 +787,68 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 45; num=std::to_string(nn);
         process_name = "100border to 100center same facet with: " + num + " nearest neighbors";
+        //occupation_0B--;
+        //occupation_0C++;
         return;
     }
     else if (cl >= 53 && cl <= 59)
     {
         nn = cl - 53; num=std::to_string(nn);
         process_name = "100center to 100border with: " + num + " nearest neighbors";
+        //if(s.get_TOPl(pos)== 14 && s.get_TOPl(next)==15) {
+        //    occupation_AC--;
+        //    occupation_AB++;
+        //}else if (s.get_TOPl(pos)== 0 && s.get_TOPl(next)==7){
+        //    occupation_0C--;
+        //    occupation_0B++;
+        //}
         return;
     }
     else if (cl >= 60 && cl <= 65)
     {
         nn = cl - 60; num=std::to_string(nn);
         process_name = "111border-push-100  with: " + num + " nearest neighbors";
+        //occupation_1B--;
+        //occupation_0C++;
         return;
     }
     else if (cl >= 66 && cl <= 71)
     {
         nn = cl - 66; num=std::to_string(nn);
         process_name = "111 mixed to 100 double with: " + num + " nearest neighbors";
+        //occupation_1B--;
+        //occupation_AB++;
         return;
     }
     else if (cl >= 72 && cl <=80)
     {
         nn = cl - 72; num=std::to_string(nn);
         process_name = "kink: 100shell to 100core with: " + num + " nearest neighbors";
+        //if(s.get_TOPl(pos)==14) occupation_AC--;
+        //if(s.get_TOPl(pos)==15) occupation_AB--;
+        //occupation_0C++;
         return;
     }
     else if (cl >= 81)
     {
         nn = cl - 81; num=std::to_string(nn);
         process_name = "100border to 100center second layer: " + num + " nearest neighbors";
+        //occupation_AB--;
+        //occupation_AC++;
         return;
     }
-    else
+    else if(cl < 8)
     {
         nn = cl; num=std::to_string(nn);
         process_name = "111center to 111center same facet with: " + num + " nearest neighbors";
+        //if(s.get_TOPl(pos)==1 && s.get_TOPl(pos)!=s.get_TOPl(next)) {
+        //    occupation_1C--;
+        //    occupation_1B++;
+        //}
         return;
+    }
+    if(nn > 0){
+        bond_breaking_counter++;
     }
 }
 
@@ -973,6 +1047,7 @@ void metropolis::probability_filler(){
     }
 }
 
+
 /*
  * Handles the deposition of a new atom. It randomly selects a valid 
  * surface site on the nanoparticle and updates the system occupancy .
@@ -990,9 +1065,17 @@ void metropolis::deposition_func(){
             break; 
         }
     }
+
     atoms[p] = true;
     pos = p;
     n_deposited++;
+    //if(s.get_TOPl(p)==0) occupation_0C++;
+    //else if(s.get_TOPl(p)==1) occupation_1C++;
+    //else if(s.get_TOPl(p)==7) occupation_0B++;
+    //else if(s.get_TOPl(p)==8) occupation_1B++;
+    //else if(s.get_TOPl(p)==14) occupation_AC++;
+    //else if(s.get_TOPl(p)==15) occupation_AB++;
+    print_occupation();
     output << "New atom: " << p << "    at time: "<< time <<std::endl;
 }
 
@@ -1069,7 +1152,7 @@ void metropolis::time_prob_calc(){
         const auto& mv = map_class_processes[chosen_class][movement];
         next = mv[1];
         pos = mv[0];
-        get_process_name(chosen_class);
+        get_process_name(chosen_class); 
         if(output_file) print_output();
         
         for(int t=0 ; t <= 12 ; t++){
@@ -1103,7 +1186,9 @@ void metropolis::print_configuration(){
     
     if(output_file) output << "Printed configuration with: " << n_deposited 
            << " occupated sites, at time: " << time * pow(10, 12) 
-           << " picoseconds, = " << time << " seconds " << std::endl;
+           << " picoseconds, = " << time << " seconds " 
+           << " Total number of bond breaked: " << bond_breaking_counter
+           << std::endl;
 }
 
 void metropolis::print_final_configuration(){
@@ -1119,7 +1204,34 @@ void metropolis::print_final_configuration(){
     
     if(output_file) output << "Printed configuration with: " << n_deposited 
            << " occupated sites, at time: " << time * pow(10, 12) 
-           << " picoseconds, = " << time << " seconds " << std::endl;
+           << " picoseconds, = " << time << " seconds " 
+           << " Total number of bond breaked: " << bond_breaking_counter
+           << std::endl;
+}
+
+void metropolis::print_occupation(){
+    for(int i=0 ; i< atoms.size() ; i++){
+        if(atoms[i]){
+            if(s.get_TOPl(i)==0) occupation_0C++;
+            else if(s.get_TOPl(i)==1) occupation_1C++;
+            else if(s.get_TOPl(i)==7) occupation_0B++;
+            else if(s.get_TOPl(i)==8) occupation_1B++;
+            else if(s.get_TOPl(i)==14) occupation_AC++;
+            else if(s.get_TOPl(i)==15) occupation_AB++;
+        }
+    }
+    occupation_file<<n_deposited<< "    "<<occupation_1B<< "    "<<occupation_1C<< "    "<<occupation_0B<< "    "<<occupation_0C<< "    "<<occupation_AB<< "    "<<occupation_AC<<std::endl;
+    if(occupation_1C<0){
+        print_final_configuration();
+         std::exit(0);
+    }
+    occupation_1B = 0;
+    occupation_1C = 0;
+    occupation_0B = 0;
+    occupation_0C = 0;
+    occupation_AB = 0;
+    occupation_AC = 0;
+
 }
 
 void metropolis::first_layer_filler(){
@@ -1133,12 +1245,14 @@ void metropolis::first_layer_filler(){
 }
 
 
+
 /*
  * Sets up the initial simulation state, initializes the nanoparticle, 
  * and triggers the first deposition event .
  */
 void metropolis::start_of_the_sim(){
     if(output_file) output.open("MC_processes.out");
+    occupation_file.open("occupation.out");
     table_of_processes_filler(); 
     deactivated_sites=s.get_upper_sites();
     atoms.resize(crd.get_N(), false);
@@ -1184,7 +1298,27 @@ void metropolis::algorithm(){
         time_prob_calc();
         
         if(deposition){
-            deposition_func();
+            bool done=false;
+            //if(n_deposited>10 && F>1){
+            //    activate_all();
+            //    int counter=0;
+            //    int lui;
+            //    for(int i=0; i<atoms.size(); i++){
+            //        if(s.get_TOPl(i)>13) {
+            //            if(atoms[i]) counter++;
+            //            else lui=i;
+            //        }
+            //    }
+            //    if(counter==31) {
+            //        atoms[lui]=true;
+            //        n_deposited++;
+            //        pos=lui;
+            //        print_occupation();
+//
+            //        done=true;
+            //    }
+            //} 
+            if(!done) deposition_func();
             print_configuration();
         } else {
             atoms[pos] = false;
