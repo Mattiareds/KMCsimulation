@@ -1,5 +1,0 @@
-******Interaction potentials
-si			!cut-off (si/no)
-T,1.0d0			!verlet_cage(T/F),rshell (in Angstrom) 
-AuPt.in		!input file for potential parametrization
-
