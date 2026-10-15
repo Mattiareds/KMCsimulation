@@ -44,6 +44,9 @@ void metropolis::file_reader(std::ifstream& ifile){
         ifile>>bool_tracker;
         if(bool_tracker=="T") fill_first_layer=true;
         else if(bool_tracker=="F") fill_first_layer=false;
+        ifile>>bool_tracker;
+        if(bool_tracker=="T") print_bond_file=true;
+        else if(bool_tracker=="F") print_bond_file=false;
 
         for (int i=0; i<100; i++) movements_per_class[i]=0;
         for (int i=0 ; i< 100; i++){ for(int j=0 ; j<1000 ; j++){for (int k=0; k<2; k++) map_class_processes[i][j][k]=-1;}}
@@ -1202,6 +1205,12 @@ void metropolis::print_final_configuration(){
     c_crd.output_writer(intermed_config, c_crd.sites_size() + n_deposited, time);
     crd.output_writer_partial(intermed_config, n_deposited, atoms);
     
+    if(print_bond_file) bond_file << "Printed configuration with: " << n_deposited 
+           << " occupated sites, at time: " << time * pow(10, 12) 
+           << " picoseconds, = " << time << " seconds " 
+           << " Total number of bond breaked: " << bond_breaking_counter
+           << std::endl;
+    
     if(output_file) output << "Printed configuration with: " << n_deposited 
            << " occupated sites, at time: " << time * pow(10, 12) 
            << " picoseconds, = " << time << " seconds " 
@@ -1252,6 +1261,7 @@ void metropolis::first_layer_filler(){
  */
 void metropolis::start_of_the_sim(){
     if(output_file) output.open("MC_processes.out");
+    if(print_bond_file) bond_file.open("bond_tracker.out");
     occupation_file.open("occupation.out");
     table_of_processes_filler(); 
     deactivated_sites=s.get_upper_sites();

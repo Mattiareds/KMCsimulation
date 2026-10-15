@@ -48,11 +48,13 @@ class metropolis{
     bool deposition=false;
     bool output_file;
     bool fill_first_layer;
+    bool print_bond_file;
     int dropped_from = -1;
     int dropped_target = -1; 
     std::string process_name;
     std::ofstream output;
     std::ofstream occupation_file;
+    std::ofstream bond_file;
 
     
     void interested_sites_calc(bool diff); 

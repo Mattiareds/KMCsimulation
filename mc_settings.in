@@ -9,6 +9,7 @@
 1000
 T
 F
+T
 
 ////////////////////////////
 number_of_barriers
@@ -21,3 +22,5 @@ prefactor TST (1/s)
 n diffusion classes
 total time (s)
 output file (T/F)
+fill first layer (T/F)
+print breaked bonds file (T/F)
