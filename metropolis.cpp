@@ -756,13 +756,11 @@ void metropolis::get_process_name(int cl){
         process_name = "111border to 111center same facet with: " + num + " nearest neighbors";
         //occupation_1B--;
         //occupation_1C++;
-        return;
     }
     else if (cl >= 15 && cl <= 21)
     {
         nn = cl - 15; num=std::to_string(nn);
         process_name = "111border to 111border different facets with: " + num + " nearest neighbors";
-        return;
     }
     else if (cl >= 22 && cl <= 28)
     {
@@ -770,7 +768,6 @@ void metropolis::get_process_name(int cl){
         process_name = "100 to 111 with: " + num + " nearest neighbors";
         //occupation_0B--;
         //occupation_1B++;
-        return;
     }
     else if (cl >= 29 && cl <= 35)
     {
@@ -778,13 +775,11 @@ void metropolis::get_process_name(int cl){
         process_name = "111 to 100 with: " + num + " nearest neighbors";
         //occupation_1B--;
         //occupation_0B++;
-        return;
     }
     else if (cl >= 36 && cl <= 44)
     {
         nn = cl - 36; num=std::to_string(nn);
         process_name = "100center to 100center same facet with: " + num + " nearest neighbors";
-        return;
     }
     else if (cl >= 45 && cl <= 52)
     {
@@ -792,7 +787,6 @@ void metropolis::get_process_name(int cl){
         process_name = "100border to 100center same facet with: " + num + " nearest neighbors";
         //occupation_0B--;
         //occupation_0C++;
-        return;
     }
     else if (cl >= 53 && cl <= 59)
     {
@@ -805,7 +799,6 @@ void metropolis::get_process_name(int cl){
         //    occupation_0C--;
         //    occupation_0B++;
         //}
-        return;
     }
     else if (cl >= 60 && cl <= 65)
     {
@@ -813,7 +806,6 @@ void metropolis::get_process_name(int cl){
         process_name = "111border-push-100  with: " + num + " nearest neighbors";
         //occupation_1B--;
         //occupation_0C++;
-        return;
     }
     else if (cl >= 66 && cl <= 71)
     {
@@ -821,7 +813,6 @@ void metropolis::get_process_name(int cl){
         process_name = "111 mixed to 100 double with: " + num + " nearest neighbors";
         //occupation_1B--;
         //occupation_AB++;
-        return;
     }
     else if (cl >= 72 && cl <=80)
     {
@@ -830,7 +821,6 @@ void metropolis::get_process_name(int cl){
         //if(s.get_TOPl(pos)==14) occupation_AC--;
         //if(s.get_TOPl(pos)==15) occupation_AB--;
         //occupation_0C++;
-        return;
     }
     else if (cl >= 81)
     {
@@ -838,7 +828,6 @@ void metropolis::get_process_name(int cl){
         process_name = "100border to 100center second layer: " + num + " nearest neighbors";
         //occupation_AB--;
         //occupation_AC++;
-        return;
     }
     else if(cl < 8)
     {
@@ -848,7 +837,6 @@ void metropolis::get_process_name(int cl){
         //    occupation_1C--;
         //    occupation_1B++;
         //}
-        return;
     }
     if(nn > 0){
         bond_breaking_counter++;
@@ -1186,10 +1174,16 @@ void metropolis::print_configuration(){
     
     c_crd.output_writer(intermed_config, c_crd.sites_size() + n_deposited, time);
     crd.output_writer_partial(intermed_config, n_deposited, atoms);
-    
-    if(output_file) output << "Printed configuration with: " << n_deposited 
-           << " occupated sites, at time: " << time * pow(10, 12) 
-           << " picoseconds, = " << time << " seconds " 
+
+    if(print_bond_file) bond_file << "Printed configuration with: " << n_deposited
+           << " occupated sites, at time: " << time * pow(10, 12)
+           << " picoseconds, = " << time << " seconds "
+           << " Total number of bond breaked: " << bond_breaking_counter
+           << std::endl;
+
+    if(output_file) output << "Printed configuration with: " << n_deposited
+           << " occupated sites, at time: " << time * pow(10, 12)
+           << " picoseconds, = " << time << " seconds "
            << " Total number of bond breaked: " << bond_breaking_counter
            << std::endl;
 }
