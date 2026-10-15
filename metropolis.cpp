@@ -1203,6 +1203,7 @@ void metropolis::print_final_configuration(){
            << " occupated sites, at time: " << time * pow(10, 12) 
            << " picoseconds, = " << time << " seconds " 
            << " Total number of bond breaked: " << bond_breaking_counter
+           << " Total number of diffusion events: " << barrier_crossing_counter
            << std::endl;
     
     if(output_file) output << "Printed configuration with: " << n_deposited 
@@ -1327,6 +1328,7 @@ void metropolis::algorithm(){
         } else {
             atoms[pos] = false;
             atoms[next]= true; 
+            barrier_crossing_counter++;
         }
         
         //second_layer_deactivation(pos);
