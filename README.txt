@@ -403,8 +403,9 @@ MC_processes.out
       - For diffusion: "process_name  from  X  to  Y"
       - For deposition: "New atom: X  at time: T"
         followed by the full xyz snapshot of all shell sites.
-    Useful if you are interested to follow each process, but can be very large, 
+    Useful if you are interested to follow each process, 
     its writing can be deactivated from mc_settings file.
+    !! For real simulations can be very large - use only for tests.
 
 
 occ*.out
@@ -416,6 +417,11 @@ debug.out
     classification and erasure calls, neighbour counts, second-layer events.
     Used for debugging; can be very large.
 
+bond_tracker.out
+    It takes trace of the number of diffusion events that break at least one
+    bond, the number of events that break bonds on 111 and 100, reported in 
+    different counters, by the number of bonds broken on each event. 
+    
 --------------------------------------------------------------------------------
 AUTHORS
 --------------------------------------------------------------------------------
