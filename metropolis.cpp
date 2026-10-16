@@ -754,6 +754,7 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 8; num=std::to_string(nn);
         process_name = "111border to 111center same facet with: " + num + " nearest neighbors";
+        if (nn>0) bond_breaking_size_counter[nn-1] ++;
         //occupation_1B--;
         //occupation_1C++;
     }
@@ -761,11 +762,13 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 15; num=std::to_string(nn);
         process_name = "111border to 111border different facets with: " + num + " nearest neighbors";
+        if (nn>0) bond_breaking_size_counter[nn-1] ++;
     }
     else if (cl >= 22 && cl <= 28)
     {
         nn = cl - 22; num=std::to_string(nn);
         process_name = "100 to 111 with: " + num + " nearest neighbors";
+        if (nn>0) bond_breaking_size_counter[nn-1+5] ++;
         //occupation_0B--;
         //occupation_1B++;
     }
@@ -773,6 +776,7 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 29; num=std::to_string(nn);
         process_name = "111 to 100 with: " + num + " nearest neighbors";
+        if (nn>0) bond_breaking_size_counter[nn-1] ++;
         //occupation_1B--;
         //occupation_0B++;
     }
@@ -780,11 +784,13 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 36; num=std::to_string(nn);
         process_name = "100center to 100center same facet with: " + num + " nearest neighbors";
+        if (nn>0) bond_breaking_size_counter[nn-1+5] ++;
     }
     else if (cl >= 45 && cl <= 52)
     {
         nn = cl - 45; num=std::to_string(nn);
         process_name = "100border to 100center same facet with: " + num + " nearest neighbors";
+        if (nn>0) bond_breaking_size_counter[nn-1+5] ++;
         //occupation_0B--;
         //occupation_0C++;
     }
@@ -792,6 +798,7 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 53; num=std::to_string(nn);
         process_name = "100center to 100border with: " + num + " nearest neighbors";
+        if (nn>0) bond_breaking_size_counter[nn-1+5] ++;
         //if(s.get_TOPl(pos)== 14 && s.get_TOPl(next)==15) {
         //    occupation_AC--;
         //    occupation_AB++;
@@ -804,6 +811,7 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 60; num=std::to_string(nn);
         process_name = "111border-push-100  with: " + num + " nearest neighbors";
+        if (nn>0) bond_breaking_size_counter[nn-1] ++;
         //occupation_1B--;
         //occupation_0C++;
     }
@@ -811,6 +819,7 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 66; num=std::to_string(nn);
         process_name = "111 mixed to 100 double with: " + num + " nearest neighbors";
+        if (nn>0) bond_breaking_size_counter[nn-1] ++;
         //occupation_1B--;
         //occupation_AB++;
     }
@@ -818,6 +827,7 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 72; num=std::to_string(nn);
         process_name = "kink: 100shell to 100core with: " + num + " nearest neighbors";
+        if (nn>0) bond_breaking_size_counter[nn-1+5] ++;
         //if(s.get_TOPl(pos)==14) occupation_AC--;
         //if(s.get_TOPl(pos)==15) occupation_AB--;
         //occupation_0C++;
@@ -826,6 +836,7 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 81; num=std::to_string(nn);
         process_name = "100border to 100center second layer: " + num + " nearest neighbors";
+        if (nn>0) bond_breaking_size_counter[nn-1+5] ++;
         //occupation_AB--;
         //occupation_AC++;
     }
@@ -833,6 +844,7 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl; num=std::to_string(nn);
         process_name = "111center to 111center same facet with: " + num + " nearest neighbors";
+        if (nn>0) bond_breaking_size_counter[nn-1] ++;
         //if(s.get_TOPl(pos)==1 && s.get_TOPl(pos)!=s.get_TOPl(next)) {
         //    occupation_1C--;
         //    occupation_1B++;
@@ -1175,10 +1187,13 @@ void metropolis::print_configuration(){
     c_crd.output_writer(intermed_config, c_crd.sites_size() + n_deposited, time);
     crd.output_writer_partial(intermed_config, n_deposited, atoms);
 
-    if(print_bond_file) bond_file << "Printed configuration with: " << n_deposited
-           << " occupated sites, at time: " << time * pow(10, 12)
-           << " picoseconds, = " << time << " seconds "
-           << " Total number of bond breaked: " << bond_breaking_counter
+    if(print_bond_file) bond_file << "Printed config w: " << n_deposited
+           << " occupated sites, time: " << time << " seconds "
+           << " Total events with at least one bond breaked: " << bond_breaking_counter
+           << " Breaked bonds on 111:    " << bond_breaking_size_counter[0] << " "<< bond_breaking_size_counter[1] 
+           << " "<< bond_breaking_size_counter[2] << " "<< bond_breaking_size_counter[3] << " "<< bond_breaking_size_counter[4]
+           << "     on 100:     " << bond_breaking_size_counter[5] << " "<< bond_breaking_size_counter[6] << " "<< bond_breaking_size_counter[7]
+           << "     Total diffusion events: " << barrier_crossing_counter
            << std::endl;
 
     if(output_file) output << "Printed configuration with: " << n_deposited

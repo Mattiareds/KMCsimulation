@@ -92,6 +92,7 @@ class metropolis{
     void table_of_processes_updater(int i);
     void clear_dynamic_processes();
     int bond_breaking_counter = 0;
+    int bond_breaking_size_counter[8] = {0}; 
     int barrier_crossing_counter = 0;
 
     public:
