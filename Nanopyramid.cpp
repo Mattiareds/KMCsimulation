@@ -73,6 +73,9 @@ int main(){
     
     g_shell.pv_substitution();
     g_shell.test_border(g_core);
+
+    std::cout<<"ncfeuinviu "<<std::endl;
+    return 1;
    
     //simulation
     alg.simulation();

@@ -135,6 +135,7 @@ void geometry::test_border(geometry& core){
       //sites only on one plane
       if(info < 2 || info==14){
             //for the planes of the core
+            int core_planes_counter=0;
             for(size_t j=0 ; j<14 ; j++){
                 double val = st->site_x(i)*core.planes[j][0] + st->site_y(i)*core.planes[j][1] + st->site_z(i)*core.planes[j][2] - core.planes[j][3];
                 double nx = core.planes[j][0];
@@ -143,6 +144,12 @@ void geometry::test_border(geometry& core){
                 double norm = std::sqrt(nx*nx + ny*ny + nz*nz);
                 double dist = std::fabs(val) / (norm > 0.0 ? norm : 1.0);
                 if(dist < eps){
+                    if(core_planes_counter==1){
+                        //second core plane: the site is already border, only refine the label
+                        //std::cout<<"corner site:    "<< i << " "<< st->site_x(i) << " " << st->site_y(i)<< st->site_x(i) << " "<<std::endl;
+                        type_of_plane[i] = type_of_plane[i] + 9; //16 if 100corner, 17 if 111corner, 24 if second layer corner
+                        break; // two planes match are enough
+                    }
                     bool has_different_nn = false;
                     for(int nn : table_of_nn[i]){
                         if(type_of_plane[nn] != type_of_plane[i]){
@@ -151,11 +158,11 @@ void geometry::test_border(geometry& core){
                     }
                     if(!has_different_nn) break; // è interno, non border
                     if(info==14){
-                        type_of_plane[i] = 15;
+                        type_of_plane[i] = 15; //second layer border
                     }else{
                         type_of_plane[i] = type_of_plane[i] + 7; //7 if 100b, 8 if 111b
                     }
-                    break; // one plane match is enough
+                    core_planes_counter++;
                 }
             }
         }

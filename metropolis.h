@@ -22,7 +22,9 @@ class metropolis{
     std::vector<bool> atoms;
     std::vector<int> interested_sites; //sites interested in the last iteration
     std::vector<int> nnn_atoms; //number of nn for each atom
-    int movements_per_class[100]; 
+    static constexpr int MAX_CLASSES = 150; //size of the class arrays, must be > highest base class + 12
+    static constexpr int MAX_PROCESSES = 1000; //max processes stored per class
+    int movements_per_class[MAX_CLASSES];
     std::vector<std::vector<int>> table_of_processes; //map initial site -> type of possible processes
     std::vector<std::vector<int>> table_of_end_pos; //map initial site -> possible end sites 
     std::vector<std::vector<int>> table_of_initial_pos; //map finale site -> initial site
@@ -30,9 +32,10 @@ class metropolis{
     std::vector<double> P; 
     std::vector<std::tuple<int,int,int>> dynamic_processes;
     //std::vector<std::vector<std::vector<int>>>  map_class_processes;//map class -> process
-    int map_class_processes[100][1000][2];
+    int map_class_processes[MAX_CLASSES][MAX_PROCESSES][2];
 
     std::vector<float> barriere;
+    int additional_cost_corner[2];
     static constexpr double Kb = 8.617333262e-5;
     int n_deposited = 0;
     float E_b;
@@ -49,6 +52,7 @@ class metropolis{
     bool output_file;
     bool fill_first_layer;
     bool print_bond_file;
+    bool differentiate_corner_sites;
     int dropped_from = -1;
     int dropped_target = -1; 
     std::string process_name;
@@ -87,7 +91,9 @@ class metropolis{
     void shifter(int c, int ind, int tg);
     bool is_deactivated(int i);
     bool is_border(int i);
+    bool is_corner(int i);
     bool are_different_border(int i, int j);
+    bool are_different_corner(int i, int j);
     std::array<int,2> activate_edges(int upper_site, int pv);
     void table_of_processes_updater(int i);
     void clear_dynamic_processes();

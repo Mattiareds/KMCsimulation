@@ -15,6 +15,9 @@ int occupation_0B = 0;
 int occupation_0C = 0;
 int occupation_AB = 0;
 int occupation_AC = 0;
+int occupation_1CR = 0;
+int occupation_0CR = 0;
+int occupation_ACR = 0;
 
 /*
  * Reads the simulation parameters from the input file.
@@ -47,9 +50,15 @@ void metropolis::file_reader(std::ifstream& ifile){
         ifile>>bool_tracker;
         if(bool_tracker=="T") print_bond_file=true;
         else if(bool_tracker=="F") print_bond_file=false;
+        ifile>>additional_cost_corner[0];
+        ifile>>additional_cost_corner[1];
 
-        for (int i=0; i<100; i++) movements_per_class[i]=0;
-        for (int i=0 ; i< 100; i++){ for(int j=0 ; j<1000 ; j++){for (int k=0; k<2; k++) map_class_processes[i][j][k]=-1;}}
+        if(n_class > MAX_CLASSES){
+            std::cerr << "Error: n_class = " << n_class << " exceeds MAX_CLASSES = " << MAX_CLASSES << std::endl;
+            std::exit(1);
+        }
+        for (int i=0; i<MAX_CLASSES; i++) movements_per_class[i]=0;
+        for (int i=0 ; i< MAX_CLASSES; i++){ for(int j=0 ; j<MAX_PROCESSES ; j++){for (int k=0; k<2; k++) map_class_processes[i][j][k]=-1;}}
         P.resize(n_class, 0.0);
         n_deposited=0;
     }
@@ -166,7 +175,7 @@ void metropolis::nn_updater(bool dep){
                     count++;
                 }
         }
-        if(s.get_TOPl(site)==14 || s.get_TOPl(site)==15) count = count - 4;
+        if(s.get_TOPl(site)==14 || s.get_TOPl(site)==15 || s.get_TOPl(site)==24) count = count - 4;
         if(s.get_TOPl(site)==10) count = count -1;
         if(count<0) count=0;
         nnn_atoms[site] = count;
@@ -184,11 +193,27 @@ bool metropolis::is_border(int i){
     return false;
 }
 
+bool metropolis::is_corner(int i){
+    if(s.get_TOPl(i)==16 || s.get_TOPl(i)==17 || s.get_TOPl(i)==24){
+        return true;
+    }
+    return false;
+}
+
 /*
  * Checks if two border sites belong to different facets of the nanoparticle .
  */
 bool metropolis::are_different_border(int i, int j){
     if(is_border(i) && is_border(j)){
+        if(s.get_TOPl(i)!=s.get_TOPl(j)){
+            return true;
+        }
+    }
+    return false;
+}
+
+bool metropolis::are_different_corner(int i, int j){
+    if(is_corner(i) && is_corner(j)){
         if(s.get_TOPl(i)!=s.get_TOPl(j)){
             return true;
         }
@@ -210,7 +235,7 @@ void metropolis::table_of_processes_filler(){
         std::vector<int> nns= s.get_table_of_nn(i);
         for(size_t j=0 ; j<nns.size() ; j++){
             int pv=nns[j];
-            if(s.get_TOPl(i)==1 || (s.get_TOPl(i)==8 && s.get_TOPl(pv)==8 && s.get_plane(i,1)==s.get_plane(pv,1))){
+            if(s.get_TOPl(i)==1 || (s.get_TOPl(i)==8 && s.get_TOPl(pv)==8 && s.get_plane(i,1)==s.get_plane(pv,1)) || (s.get_TOPl(i)==17 && s.get_TOPl(pv)==17 && s.get_plane(i,1)==s.get_plane(pv,1))){
                  bool already_present = false;
                 for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                     if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 0){
@@ -223,7 +248,7 @@ void metropolis::table_of_processes_filler(){
                     table_of_initial_pos[pv].push_back(i);
                 }
             }
-            else if((s.get_TOPl(i)==0 && s.get_TOPl(pv)==0) || (s.get_TOPl(i)==7 && s.get_TOPl(pv)==7)) {
+            else if((s.get_TOPl(i)==0 && s.get_TOPl(pv)==0) || (s.get_TOPl(i)==7 && s.get_TOPl(pv)==7) || (s.get_TOPl(i)==16 && s.get_TOPl(pv)==16)) {
                  bool already_present = false;
                 for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                     if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 36){
@@ -236,7 +261,7 @@ void metropolis::table_of_processes_filler(){
                     table_of_initial_pos[pv].push_back(i);
                 }
             }
-            else if(s.get_TOPl(i)==8 && s.get_TOPl(pv)==8 && s.get_plane(i,1)!=s.get_plane(pv,1)) {
+            else if( (s.get_TOPl(i)==8 || s.get_TOPl(i)==17) && (s.get_TOPl(pv)==8 || s.get_TOPl(pv)==17) && s.get_plane(i,1)!=s.get_plane(pv,1)) {
                  bool already_present = false;
                 for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                     if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 15){
@@ -249,7 +274,7 @@ void metropolis::table_of_processes_filler(){
                     table_of_initial_pos[pv].push_back(i);
                 }
             }
-            else if(s.get_TOPl(i)==8 && s.get_TOPl(pv)==7) {
+            else if( (s.get_TOPl(i)==8 || s.get_TOPl(i)==17) && (s.get_TOPl(pv)==7|| s.get_TOPl(pv)==16)) {
                  bool already_present = false;
                 for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                     if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 29){
@@ -262,7 +287,7 @@ void metropolis::table_of_processes_filler(){
                     table_of_initial_pos[pv].push_back(i);
                 }
             }
-            else if(s.get_TOPl(i)==7 && s.get_TOPl(pv)==8) {
+            else if((s.get_TOPl(i)==7 || s.get_TOPl(i)==16 ) && (s.get_TOPl(pv)==8 || s.get_TOPl(pv)==17)) {
                  bool already_present = false;
                 for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                     if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 22){
@@ -314,6 +339,73 @@ void metropolis::table_of_processes_filler(){
                     table_of_initial_pos[pv].push_back(i);
                 }
             }
+            ///////////////////////////////////////////////////////////////////////////corner
+            else if((s.get_TOPl(i)==17 && s.get_TOPl(pv)==8)) { 
+                 bool already_present = false;
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
+                    if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 90){
+                        already_present = true; break;
+                    }
+                }
+                if(!already_present){
+                    table_of_processes[i].push_back(90); // 111cr to 111b
+                    table_of_end_pos[i].push_back(pv);
+                    table_of_initial_pos[pv].push_back(i);
+                }
+            }
+            else if((s.get_TOPl(i)==8 && s.get_TOPl(pv)==17)) { 
+                 bool already_present = false;
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
+                    if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 96){
+                        already_present = true; break;
+                    }
+                }
+                if(!already_present){
+                    table_of_processes[i].push_back(96); // 111b to 111cr
+                    table_of_end_pos[i].push_back(pv);
+                    table_of_initial_pos[pv].push_back(i);
+                }
+            }
+            else if((s.get_TOPl(i)==16 && s.get_TOPl(pv)==7)) { 
+                 bool already_present = false;
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
+                    if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 102){
+                        already_present = true; break;
+                    }
+                }
+                if(!already_present){
+                    table_of_processes[i].push_back(102); // 100cr to 100b
+                    table_of_end_pos[i].push_back(pv);
+                    table_of_initial_pos[pv].push_back(i);
+                }
+            }
+            else if((s.get_TOPl(i)==7 && s.get_TOPl(pv)==16)) { 
+                 bool already_present = false;
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
+                    if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 106){
+                        already_present = true; break;
+                    }
+                }
+                if(!already_present){
+                    table_of_processes[i].push_back(106); // 100b to 100cr
+                    table_of_end_pos[i].push_back(pv);
+                    table_of_initial_pos[pv].push_back(i);
+                }
+            }
+            else if((s.get_TOPl(i)==17 && s.get_TOPl(pv)==1)) { 
+                 bool already_present = false;
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
+                    if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 110){
+                        already_present = true; break;
+                    }
+                }
+                if(!already_present){
+                    table_of_processes[i].push_back(110); // 111cr to 111c
+                    table_of_end_pos[i].push_back(pv);
+                    table_of_initial_pos[pv].push_back(i);
+                }
+            }
+            // 24 <-> 15 (116, 122) are added only at activation, in second_layer_updates
         }
     }
 }
@@ -327,7 +419,7 @@ void metropolis::table_of_processes_updater(int i){
     std::vector<int> nns= s.get_table_of_nn(i);
     for(size_t j=0 ; j<nns.size() ; j++){
         int pv=nns[j];
-        if(s.get_TOPl(i)==1 || (s.get_TOPl(i)==8 && s.get_TOPl(pv)==8 && s.get_plane(i,1)==s.get_plane(pv,1)) || (s.get_TOPl(i)==8 && s.get_TOPl(pv)==10) || (s.get_TOPl(i)==10 && s.get_TOPl(pv)==10) || (s.get_TOPl(i)==10 && s.get_TOPl(pv)==8) ){
+        if(s.get_TOPl(i)==1 || (s.get_TOPl(i)==8 && s.get_TOPl(pv)==8 && s.get_plane(i,1)==s.get_plane(pv,1)) || (s.get_TOPl(i)==17 && s.get_TOPl(pv)==17 && s.get_plane(i,1)==s.get_plane(pv,1)) || ((s.get_TOPl(i)==8 || s.get_TOPl(i)==17) && s.get_TOPl(pv)==10) || (s.get_TOPl(i)==10 && s.get_TOPl(pv)==10) || (s.get_TOPl(i)==10 && (s.get_TOPl(pv)==8 || s.get_TOPl(pv)==17)) ){
             bool already_present = false;
             for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                 if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 0){
@@ -341,7 +433,7 @@ void metropolis::table_of_processes_updater(int i){
                 //if(s.get_TOPl(i)==10) std::cout<<"edge " << i << " to "<< pv << std::endl;
             }
         }
-        else if(s.get_TOPl(i)==8 && s.get_TOPl(pv)==8 && s.get_plane(i,1)!=s.get_plane(pv,1)) {
+        else if((s.get_TOPl(i)==8 || s.get_TOPl(i)==17) && (s.get_TOPl(pv)==8 || s.get_TOPl(pv)==17) && s.get_plane(i,1)!=s.get_plane(pv,1)) {
             bool already_present = false;
             for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                 if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 15){
@@ -354,7 +446,7 @@ void metropolis::table_of_processes_updater(int i){
                 table_of_initial_pos[pv].push_back(i);
             }
         }
-        else if((s.get_TOPl(i)==8 || s.get_TOPl(i)==10) && s.get_TOPl(pv)==7) {
+        else if((s.get_TOPl(i)==8 || s.get_TOPl(i)==10 || s.get_TOPl(i)==17) && (s.get_TOPl(pv)==7 || s.get_TOPl(pv)==16)) {
             bool already_present = false;
             for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                 if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 29){
@@ -368,7 +460,7 @@ void metropolis::table_of_processes_updater(int i){
                 //if(s.get_TOPl(i)==10) std::cout<<"edge " << i << " to "<< pv << std::endl;
             }
         }
-        else if(s.get_TOPl(i)==7 && (s.get_TOPl(pv)==8 || s.get_TOPl(pv)==10)) {
+        else if((s.get_TOPl(i)==7 || s.get_TOPl(i)==16) && (s.get_TOPl(pv)==8 || s.get_TOPl(pv)==10 || s.get_TOPl(pv)==17)) {
             bool already_present = false;
             for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                 if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 22){
@@ -395,7 +487,7 @@ void metropolis::table_of_processes_updater(int i){
                 //if(s.get_TOPl(i)==10) std::cout<<"edge " << i << " to "<< pv << std::endl;
             }
         }
-        else if(s.get_TOPl(i)==10 && s.get_TOPl(pv)>10){ 
+        else if(s.get_TOPl(i)==10 && (s.get_TOPl(pv)==14 || s.get_TOPl(pv)==15 || s.get_TOPl(pv)==24)){
             bool already_present = false;
             for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
                 if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 66){
@@ -409,6 +501,71 @@ void metropolis::table_of_processes_updater(int i){
                 //if(s.get_TOPl(i)==10) std::cout<<"edge " << i << " to "<< pv << std::endl;
             }
         }
+        else if((s.get_TOPl(i)==17 && s.get_TOPl(pv)==8)) { 
+                 bool already_present = false;
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
+                    if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 90){
+                        already_present = true; break;
+                    }
+                }
+                if(!already_present){
+                    table_of_processes[i].push_back(90); // 111cr to 111b
+                    table_of_end_pos[i].push_back(pv);
+                    table_of_initial_pos[pv].push_back(i);
+                }
+            }
+            else if((s.get_TOPl(i)==8 && s.get_TOPl(pv)==17)) { 
+                 bool already_present = false;
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
+                    if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 96){
+                        already_present = true; break;
+                    }
+                }
+                if(!already_present){
+                    table_of_processes[i].push_back(96); // 111b to 111cr
+                    table_of_end_pos[i].push_back(pv);
+                    table_of_initial_pos[pv].push_back(i);
+                }
+            }
+            else if((s.get_TOPl(i)==16 && s.get_TOPl(pv)==7)) { 
+                 bool already_present = false;
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
+                    if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 102){
+                        already_present = true; break;
+                    }
+                }
+                if(!already_present){
+                    table_of_processes[i].push_back(102); // 100cr to 100b
+                    table_of_end_pos[i].push_back(pv);
+                    table_of_initial_pos[pv].push_back(i);
+                }
+            }
+            else if((s.get_TOPl(i)==7 && s.get_TOPl(pv)==16)) { 
+                 bool already_present = false;
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
+                    if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 106){
+                        already_present = true; break;
+                    }
+                }
+                if(!already_present){
+                    table_of_processes[i].push_back(106); // 100b to 100cr
+                    table_of_end_pos[i].push_back(pv);
+                    table_of_initial_pos[pv].push_back(i);
+                }
+            }
+            else if((s.get_TOPl(i)==17 && s.get_TOPl(pv)==1)) { 
+                 bool already_present = false;
+                for(size_t k = 0; k < table_of_end_pos[i].size(); k++){
+                    if(table_of_end_pos[i][k] == pv && table_of_processes[i][k] == 110){
+                        already_present = true; break;
+                    }
+                }
+                if(!already_present){
+                    table_of_processes[i].push_back(110); // 111cr to 111c
+                    table_of_end_pos[i].push_back(pv);
+                    table_of_initial_pos[pv].push_back(i);
+                }
+            }
     }
 }
 
@@ -436,7 +593,7 @@ std::array<int,2> metropolis::activate_edges(int upper_site, int pv){
             s.append_nn(edge[i], upper_site);
             s.set_TOPl(edge[i],10);  
             for(auto old_nn : s.get_table_of_nn(edge[i])){
-                if(s.get_TOPl(old_nn)==8){
+                if((s.get_TOPl(old_nn)==8 || s.get_TOPl(old_nn)==17 )){
                     int oppc = 0;
                     for (int p : table_of_processes[old_nn]){
                         if(p==0) oppc++;
@@ -551,10 +708,22 @@ void metropolis::second_layer_updates(int upper_site){
                 add_process(pv, upper_site, 53);   // NUOVO: link inverso, classe corretta
             }
         }
-        else if(s.get_TOPl(pv)==0 || s.get_TOPl(pv)==7){ 
+        else if((s.get_TOPl(upper_site)==24 && s.get_TOPl(pv)==15)){
+            if(is_deactivated(pv)==false){
+                add_process(upper_site, pv, 116); // 100cr Au to 100b Au
+                add_process(pv, upper_site, 122); // 100b Au to 100cr Au
+            }
+        }
+        else if((s.get_TOPl(upper_site)==15 && s.get_TOPl(pv)==24)){
+            if(is_deactivated(pv)==false){
+                add_process(upper_site, pv, 122); // 100b Au to 100cr Au
+                add_process(pv, upper_site, 116); // 100cr Au to 100b Au
+            }
+        }
+        else if(s.get_TOPl(pv)==0 || s.get_TOPl(pv)==7 || s.get_TOPl(pv)==16){
             add_process(upper_site, pv, 72);
         }
-        if(s.get_TOPl(pv)==7){ 
+        if(s.get_TOPl(pv)==7 || s.get_TOPl(pv)==16){
             auto edge_sites = activate_edges(upper_site,pv);
             for (auto edge_site : edge_sites){
                 if(edge_site>=0){
@@ -615,7 +784,7 @@ void metropolis::second_layer_deactivation(int deserted_site) {
     bool fallen_down = false;
     for (int upper_site : nn) {
         // Verifica se è un sito del secondo strato (assumendo TOPl 14 o 15)
-        if (s.get_TOPl(upper_site) == 14 || s.get_TOPl(upper_site) == 15) {
+        if (s.get_TOPl(upper_site) == 14 || s.get_TOPl(upper_site) == 15 || s.get_TOPl(upper_site) == 24) {
             // Se il sito è correntemente attivo
             if (!is_deactivated(upper_site)) {
                 
@@ -735,7 +904,14 @@ void metropolis::barrier_chooser(int cl, int &bar_id , int &neighbours ){
     else if (cl >= 60 && cl <= 65) { bar[0] = 8; bar[1] = cl - 60; }
     else if (cl >= 66 && cl <= 71) { bar[0] = 9; bar[1] = cl - 66; }
     else if (cl >= 72 && cl <= 80) { bar[0] = 10; bar[1] = cl - 72; }
-    else if (cl >= 81) { bar[0] = 11; bar[1] = cl - 81; }
+    else if (cl >= 81 && cl <= 89) { bar[0] = 11; bar[1] = cl - 81; }
+    else if (cl >= 90 && cl <= 95) { bar[0] = 12; bar[1] = cl - 90; }
+    else if (cl >= 96 && cl <= 101) { bar[0] = 13; bar[1] = cl - 96; }
+    else if (cl >= 102 && cl <= 105) { bar[0] = 14; bar[1] = cl - 102; }
+    else if (cl >= 106 && cl <= 109) { bar[0] = 15; bar[1] = cl - 106; }
+    else if (cl >= 110 && cl <= 115) { bar[0] = 16; bar[1] = cl - 110; }
+    else if (cl >= 116 && cl <= 121) { bar[0] = 12; bar[1] = cl - 116; } // 24 -> 15, same barrier as 17 -> 8
+    else if (cl >= 122 && cl <= 127) { bar[0] = 13; bar[1] = cl - 122; } // 15 -> 24, same barrier as 8 -> 17
     else { bar[0] = 0; bar[1] = cl; }
 
     bar_id=bar[0];
@@ -749,12 +925,16 @@ void metropolis::barrier_chooser(int cl, int &bar_id , int &neighbours ){
 void metropolis::get_process_name(int cl){
     std::string num;
     int nn = 0;
+    // increments bond_breaking_size_counter only if idx is inside the array
+    auto count_bond = [&](int idx){
+        if(idx >= 0 && idx < 8) bond_breaking_size_counter[idx]++;
+    };
 
     if (cl >= 8 && cl <=14)
     {
         nn = cl - 8; num=std::to_string(nn);
         process_name = "111border to 111center same facet with: " + num + " nearest neighbors";
-        if (nn>0) bond_breaking_size_counter[nn-1] ++;
+        if (nn>0) count_bond(nn-1);
         //occupation_1B--;
         //occupation_1C++;
     }
@@ -762,13 +942,13 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 15; num=std::to_string(nn);
         process_name = "111border to 111border different facets with: " + num + " nearest neighbors";
-        if (nn>0) bond_breaking_size_counter[nn-1] ++;
+        if (nn>0) count_bond(nn-1);
     }
     else if (cl >= 22 && cl <= 28)
     {
         nn = cl - 22; num=std::to_string(nn);
         process_name = "100 to 111 with: " + num + " nearest neighbors";
-        if (nn>0) bond_breaking_size_counter[nn-1+5] ++;
+        if (nn>0) count_bond(nn-1+5);
         //occupation_0B--;
         //occupation_1B++;
     }
@@ -776,7 +956,7 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 29; num=std::to_string(nn);
         process_name = "111 to 100 with: " + num + " nearest neighbors";
-        if (nn>0) bond_breaking_size_counter[nn-1] ++;
+        if (nn>0) count_bond(nn-1);
         //occupation_1B--;
         //occupation_0B++;
     }
@@ -784,13 +964,13 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 36; num=std::to_string(nn);
         process_name = "100center to 100center same facet with: " + num + " nearest neighbors";
-        if (nn>0) bond_breaking_size_counter[nn-1+5] ++;
+        if (nn>0) count_bond(nn-1+5);
     }
     else if (cl >= 45 && cl <= 52)
     {
         nn = cl - 45; num=std::to_string(nn);
         process_name = "100border to 100center same facet with: " + num + " nearest neighbors";
-        if (nn>0) bond_breaking_size_counter[nn-1+5] ++;
+        if (nn>0) count_bond(nn-1+5);
         //occupation_0B--;
         //occupation_0C++;
     }
@@ -798,7 +978,7 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 53; num=std::to_string(nn);
         process_name = "100center to 100border with: " + num + " nearest neighbors";
-        if (nn>0) bond_breaking_size_counter[nn-1+5] ++;
+        if (nn>0) count_bond(nn-1+5);
         //if(s.get_TOPl(pos)== 14 && s.get_TOPl(next)==15) {
         //    occupation_AC--;
         //    occupation_AB++;
@@ -811,7 +991,7 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 60; num=std::to_string(nn);
         process_name = "111border-push-100  with: " + num + " nearest neighbors";
-        if (nn>0) bond_breaking_size_counter[nn-1] ++;
+        if (nn>0) count_bond(nn-1);
         //occupation_1B--;
         //occupation_0C++;
     }
@@ -819,7 +999,7 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 66; num=std::to_string(nn);
         process_name = "111 mixed to 100 double with: " + num + " nearest neighbors";
-        if (nn>0) bond_breaking_size_counter[nn-1] ++;
+        if (nn>0) count_bond(nn-1);
         //occupation_1B--;
         //occupation_AB++;
     }
@@ -827,24 +1007,66 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 72; num=std::to_string(nn);
         process_name = "kink: 100shell to 100core with: " + num + " nearest neighbors";
-        if (nn>0) bond_breaking_size_counter[nn-1+5] ++;
+        if (nn>0) count_bond(nn-1+5);
         //if(s.get_TOPl(pos)==14) occupation_AC--;
         //if(s.get_TOPl(pos)==15) occupation_AB--;
         //occupation_0C++;
     }
-    else if (cl >= 81)
+    else if (cl >= 81 && cl <= 89)
     {
         nn = cl - 81; num=std::to_string(nn);
         process_name = "100border to 100center second layer: " + num + " nearest neighbors";
-        if (nn>0) bond_breaking_size_counter[nn-1+5] ++;
+        if (nn>0) count_bond(nn-1+5);
         //occupation_AB--;
         //occupation_AC++;
+    }
+    else if (cl >= 90 && cl <= 95)
+    {
+        nn = cl - 90; num=std::to_string(nn);
+        process_name = "111corner to 111border same facet with: " + num + " nearest neighbors";
+        if (nn>0) count_bond(nn-1);
+    }
+    else if (cl >= 96 && cl <= 101)
+    {
+        nn = cl - 96; num=std::to_string(nn);
+        process_name = "111border to 111corner same facet with: " + num + " nearest neighbors";
+        if (nn>0) count_bond(nn-1);
+    }
+    else if (cl >= 102 && cl <= 105)
+    {
+        nn = cl - 102; num=std::to_string(nn);
+        process_name = "100corner to 100border with: " + num + " nearest neighbors";
+        if (nn>0) count_bond(nn-1+5);
+    }
+    else if (cl >= 106 && cl <= 109)
+    {
+        nn = cl - 106; num=std::to_string(nn);
+        process_name = "100border to 100corner with: " + num + " nearest neighbors";
+        if (nn>0) count_bond(nn-1+5);
+    }
+    else if (cl >= 110 && cl <= 115)
+    {
+        nn = cl - 110; num=std::to_string(nn);
+        process_name = "111corner to 111center same facet with: " + num + " nearest neighbors";
+        if (nn>0) count_bond(nn-1);
+    }
+    else if (cl >= 116 && cl <= 121)
+    {
+        nn = cl - 116; num=std::to_string(nn);
+        process_name = "100corner to 100border second layer with: " + num + " nearest neighbors";
+        if (nn>0) count_bond(nn-1+5);
+    }
+    else if (cl >= 122 && cl <= 127)
+    {
+        nn = cl - 122; num=std::to_string(nn);
+        process_name = "100border to 100corner second layer with: " + num + " nearest neighbors";
+        if (nn>0) count_bond(nn-1+5);
     }
     else if(cl < 8)
     {
         nn = cl; num=std::to_string(nn);
         process_name = "111center to 111center same facet with: " + num + " nearest neighbors";
-        if (nn>0) bond_breaking_size_counter[nn-1] ++;
+        if (nn>0) count_bond(nn-1);
         //if(s.get_TOPl(pos)==1 && s.get_TOPl(pos)!=s.get_TOPl(next)) {
         //    occupation_1C--;
         //    occupation_1B++;
@@ -872,10 +1094,13 @@ double metropolis::probability_calculator(int cl){
  * are no "holes" in the memory structure after an event .
  */
 void metropolis::shifter(int c, int ind, int tg){
-    for(int i = ind ; i<tg ; i++){
+    for(int i = ind ; i<tg-1 ; i++){
         map_class_processes[c][i][0] = map_class_processes[c][i+1][0];
         map_class_processes[c][i][1] = map_class_processes[c][i+1][1];
     }
+    // last used slot becomes empty (avoids reading slot tg when the class is full)
+    map_class_processes[c][tg-1][0] = -1;
+    map_class_processes[c][tg-1][1] = -1;
 }
 
 /*
@@ -883,6 +1108,7 @@ void metropolis::shifter(int c, int ind, int tg){
  * is no longer physically possible (e.g., neighbor coordination changed) .
  */
 void metropolis::map_of_class_eraser(int c, int i, int j) {
+    if(c < 0 || c >= MAX_CLASSES) return;
     auto& processes= map_class_processes[c];
     int tg = get_MCP_size(c);
     for(int ind=0; ind< tg ; ind++){
@@ -930,6 +1156,10 @@ void metropolis::map_of_class_next_eraser(int i) {
  * Adds a physical jump to the global catalog for a given class .
  */
 void metropolis::map_of_class_filler(int c, int i , int j){
+    if(c < 0 || c >= MAX_CLASSES){
+        std::cerr << "Error: Class " << c << " exceeds array size!" << std::endl;
+        return;
+    }
     auto& processes = map_class_processes[c];
     for (auto& couple: processes){
         if(couple[0]<0){
@@ -945,6 +1175,7 @@ void metropolis::map_of_class_filler(int c, int i , int j){
  * Returns the current number of valid processes stored in a specific class .
  */
 int metropolis::get_MCP_size(int c){
+    if(c < 0 || c >= MAX_CLASSES) return 0;
     int counter=0;
     auto& processes = map_class_processes[c];
     for (auto& couple: processes){
@@ -1001,7 +1232,7 @@ void metropolis::classification(){
 
                 if(!atoms[pv]){ 
                     int actual_class = base_process + nn_count; 
-                    if(actual_class >= 0 && actual_class < 100) {
+                    if(actual_class >= 0 && actual_class < MAX_CLASSES) {
                         //if(actual_class>35 && actual_class < 60) std::cout<< "process " << actual_class << "site    " << site<< " neighbors "<<nn_count << std::endl;
                         map_of_class_filler(actual_class, site, pv);   
                     } else {
@@ -1009,7 +1240,7 @@ void metropolis::classification(){
                     }
                 }
                 // Push logic
-                else if(atoms[pv] && s.get_TOPl(pv)==7 && s.get_TOPl(site)==8){
+                else if(atoms[pv] && (s.get_TOPl(pv)==7 || s.get_TOPl(pv)==16)  && (s.get_TOPl(site)==8 || s.get_TOPl(site)==17)){
                     auto nn = s.get_table_of_nn(pv);
                     for(int n : nn){
                         if(!atoms[n] && s.get_TOPl(n)==0){
@@ -1023,7 +1254,7 @@ void metropolis::classification(){
                 else if(atoms[pv] && base_process==72){
                     auto nn = s.get_table_of_nn(pv);
                     for(int n : nn){
-                        if(!atoms[n] && (s.get_TOPl(n)==0 || s.get_TOPl(n)==7)){
+                        if(!atoms[n] && (s.get_TOPl(n)==0 || s.get_TOPl(n)==7 || s.get_TOPl(n)==16 )){
                             int actual_class = 72 + nn_count;
                             dynamic_processes.emplace_back(site, n, actual_class);
                             map_of_class_filler(actual_class, site, n);
@@ -1116,13 +1347,13 @@ void metropolis::time_prob_calc(){
             p_i += P[i];
         }
 
+        if(chosen_class<0){
+            std::cerr << "Warning: chosen_class has no size "<<std::endl;
+            std::exit(0);
+        }
         int mcount = movements_per_class[chosen_class];
         if(mcount <= 0){
             std::cerr << "Warning: chosen_class has no movements: " << chosen_class << std::endl;
-            std::exit(0);
-        }
-        if(chosen_class<0){
-            std::cerr << "Warning: chosen_class has no size "<<std::endl;
             std::exit(0);
         }
         std::uniform_int_distribution<> dist(0, mcount - 1);
@@ -1237,9 +1468,13 @@ void metropolis::print_occupation(){
             else if(s.get_TOPl(i)==8) occupation_1B++;
             else if(s.get_TOPl(i)==14) occupation_AC++;
             else if(s.get_TOPl(i)==15) occupation_AB++;
+            else if(s.get_TOPl(i)==16) occupation_0CR++;
+            else if(s.get_TOPl(i)==17) occupation_1CR++;
+            else if(s.get_TOPl(i)==24) occupation_ACR++;
         }
     }
-    occupation_file<<n_deposited<< "    "<<occupation_1B<< "    "<<occupation_1C<< "    "<<occupation_0B<< "    "<<occupation_0C<< "    "<<occupation_AB<< "    "<<occupation_AC<<std::endl;
+    occupation_file<<n_deposited<< "    "<<occupation_1B<< "    "<<occupation_1C<< "    "<<occupation_0B<< "    "<<occupation_0C<< "    "<<occupation_AB<< "    "<<occupation_AC
+                   << "    "<<occupation_1CR<< "    "<<occupation_0CR<< "    "<<occupation_ACR<<std::endl;
     if(occupation_1C<0){
         print_final_configuration();
          std::exit(0);
@@ -1248,6 +1483,9 @@ void metropolis::print_occupation(){
     occupation_1C = 0;
     occupation_0B = 0;
     occupation_0C = 0;
+    occupation_1CR = 0;
+    occupation_0CR = 0;
+    occupation_ACR = 0;
     occupation_AB = 0;
     occupation_AC = 0;
 
