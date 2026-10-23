@@ -3,6 +3,8 @@
 #include <random>
 #include <array>
 #include <tuple>
+#include <chrono>
+#include <string>
 
 
 #ifndef METROPOLIS_H
@@ -52,13 +54,18 @@ class metropolis{
     bool output_file;
     bool fill_first_layer;
     bool print_bond_file;
-    bool differentiate_corner_sites;
+    bool differentiate_corner_sites = false;
+    double max_runtime_hours = 0.0; //wall clock limit of the program, 0 = no limit
+    std::chrono::steady_clock::time_point start_runtime;
+    std::string stop_reason = "physical simulation time reached";
+    bool final_report_written = false;
     int dropped_from = -1;
-    int dropped_target = -1; 
+    int dropped_target = -1;
     std::string process_name;
     std::ofstream output;
     std::ofstream occupation_file;
     std::ofstream bond_file;
+    std::ofstream run_info_file; //always written: settings of the run and why it stopped
 
     
     void interested_sites_calc(bool diff); 
@@ -86,6 +93,11 @@ class metropolis{
     void print_final_configuration();
     void print_final_output();
     void print_occupation();
+    void write_run_info();
+    void write_final_report(const std::string& reason);
+    [[noreturn]] void stop_simulation(const std::string& reason);
+    double elapsed_runtime() const; //seconds since the start of the simulation
+    bool runtime_exceeded() const;
     void barrier_chooser(int cl, int &i, int& j);
     void get_process_name(int cl);
     void shifter(int c, int ind, int tg);
@@ -112,7 +124,10 @@ class metropolis{
     //std::ofstream debug_file;
 
     void file_reader(std::ifstream& ifile);
-    void simulation(); 
+    void simulation();
+
+    //getter
+    bool get_differentiate_corner_sites() const { return differentiate_corner_sites; }
 
 };
 

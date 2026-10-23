@@ -1,30 +1,27 @@
-17
-0.14    0.55    0.24    0.07    0.64    0.59    0.34    0.46    0.20    0.24    0.35    0.51 0.18 0.10 0.57 0.53 0.42 
-0.2
-10000
-0.40
-340
-1e12
-130
-60
-F
-F
-T
+# =============================== kMC SETTINGS ===============================
+
+17                  # number of barriers (12 without corners, 17 with corners)
+0.14 0.55 0.24 0.07 0.64 0.59 0.34 0.46 0.20 0.24 0.35 0.51 0.18 0.10 0.57 0.53 0.42    # barriers (eV), see legend below
+0.2                 # E_b: additional energy per nearest neighbour (eV)
+10000               # F: deposition rate per site (atoms/s)
+0.40                # filling: fraction of sites filled before stopping the deposition
+340                 # temperature (K)
+1e12                # nu_0: TST prefactor (1/s)
+130                 # number of diffusion classes
+60                  # total physical time of the simulation (s)
+F                   # write MC_processes.out with every event (T/F)
+F                   # fill the first layer at the start (T/F)
+T                   # write bond_tracker.out with the broken bonds (T/F)
+T                   # differentiate corner sites (T/F): F = corner sites are treated as border sites
+0                   # max runtime of the program (hours, wall clock); 0 = no limit
 
 
-////////////////////////////
-number_of_barriers
-111C-111C (DFT) 100C-100C (DFT)  111<->111 (DFT)  111->100 (DFT)   100->111 (DFT)    100B-100C (DFT)  111B->111C (DFT)  100C-100B (DFT) push (DFT)  111misto->100Au (DFT)  kink 100B->Cgold  Corner 
-E_b (eV)
-F (atoms/s) per site
-filling
-temperature (K)
-prefactor TST (1/s)
-n diffusion classes
-total time (s)
-output file (T/F)
-fill first layer (T/F)
-print breaked bonds file (T/F)
-
-
-corner barriers criteria: 111CR <-> 111B = 111C<->111B +- 0.04  /  100CR <-> 100B = 100C<->100B +- 0.02  /  111CR -> 111C = 111B->111C + 0.08
+# ------------------------------ barriers legend ------------------------------
+#  [0] 111C-111C (DFT)        [1] 100C-100C (DFT)        [2] 111<->111 (DFT)
+#  [3] 111->100 (DFT)         [4] 100->111 (DFT)         [5] 100B-100C (DFT)
+#  [6] 111B->111C (DFT)       [7] 100C-100B (DFT)        [8] push (DFT)
+#  [9] 111misto->100Au (DFT)  [10] kink 100B->Cgold      [11] 100B->100C second layer
+#  corner (only with corners T):
+#  [12] 111CR->111B   [13] 111B->111CR   [14] 100CR->100B   [15] 100B->100CR   [16] 111CR->111C
+#
+# corner barriers criteria: 111CR <-> 111B = 111C<->111B +- 0.04  /  100CR <-> 100B = 100C<->100B +- 0.02  /  111CR -> 111C = 111B->111C + 0.08

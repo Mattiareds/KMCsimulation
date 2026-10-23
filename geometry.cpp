@@ -130,6 +130,8 @@ void geometry::test_border(geometry& core){
         return;
     }
     const double eps = 1e-3; // distance tolerance
+    //if false, sites on two core planes stay border sites (7, 8, 15) as in the version without corners
+    const bool corners = (mt != nullptr) && mt->get_differentiate_corner_sites();
     for(size_t i=0 ; i<type_of_plane.size() ; i++){ //run on which is the plane for each site
         int info = type_of_plane[i];
       //sites only on one plane
@@ -147,7 +149,7 @@ void geometry::test_border(geometry& core){
                     if(core_planes_counter==1){
                         //second core plane: the site is already border, only refine the label
                         //std::cout<<"corner site:    "<< i << " "<< st->site_x(i) << " " << st->site_y(i)<< st->site_x(i) << " "<<std::endl;
-                        type_of_plane[i] = type_of_plane[i] + 9; //16 if 100corner, 17 if 111corner, 24 if second layer corner
+                        if(corners) type_of_plane[i] = type_of_plane[i] + 9; //16 if 100corner, 17 if 111corner, 24 if second layer corner
                         break; // two planes match are enough
                     }
                     bool has_different_nn = false;

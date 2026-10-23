@@ -8,6 +8,10 @@
 #include <new>
 #include <algorithm>
 #include <unordered_set>
+#include <sstream>
+#include <string>
+#include <chrono>
+#include <ctime>
 
 int occupation_1B = 0;
 int occupation_1C = 0;
@@ -20,43 +24,115 @@ int occupation_0CR = 0;
 int occupation_ACR = 0;
 
 /*
+ * Helper to read mc_settings.in: everything after '#' is a comment and is ignored,
+ * the remaining values are read in order. Every missing or wrong value stops
+ * the program with a message that names the parameter.
+ */
+namespace {
+class settings_parser{
+    private:
+    std::vector<std::string> tokens;
+    size_t idx = 0;
+
+    public:
+    explicit settings_parser(std::ifstream& ifile){
+        std::string line;
+        while(std::getline(ifile, line)){
+            size_t comment = line.find('#');
+            if(comment != std::string::npos) line.erase(comment);
+            std::istringstream ss(line);
+            std::string tk;
+            while(ss >> tk) tokens.push_back(tk);
+        }
+    }
+
+    [[noreturn]] static void error(const std::string& name, const std::string& msg){
+        std::cerr << "Error in mc_settings.in, parameter '" << name << "': " << msg << std::endl
+                  << "(check also that no value is missing or added in the lines before this one)" << std::endl;
+        std::exit(1);
+    }
+
+    const std::string& next(const std::string& name){
+        if(idx >= tokens.size()) error(name, "missing value (the file ends before this parameter)");
+        return tokens[idx++];
+    }
+
+    double get_double(const std::string& name){
+        const std::string& s = next(name);
+        size_t used = 0;
+        double v = 0.0;
+        try { v = std::stod(s, &used); } catch(...) { used = 0; }
+        if(used != s.size()) error(name, "\"" + s + "\" is not a number");
+        return v;
+    }
+
+    int get_int(const std::string& name){
+        const std::string& s = next(name);
+        size_t used = 0;
+        int v = 0;
+        try { v = std::stoi(s, &used); } catch(...) { used = 0; }
+        if(used != s.size()) error(name, "\"" + s + "\" is not an integer number");
+        return v;
+    }
+
+    bool get_bool(const std::string& name){
+        const std::string& s = next(name);
+        if(s=="T" || s=="t") return true;
+        if(s=="F" || s=="f") return false;
+        error(name, "expected T or F, read \"" + s + "\"");
+    }
+
+    size_t remaining() const { return tokens.size() - idx; }
+};
+}
+
+/*
  * Reads the simulation parameters from the input file.
- * Initializes energy barriers, temperature, flux (F), and sets up the internal 
+ * Initializes energy barriers, temperature, flux (F), and sets up the internal
  * data structures for process classification .
  */
 void metropolis::file_reader(std::ifstream& ifile){
     if(ifile){
-        int n_barriers;
-        ifile>>n_barriers;
+        settings_parser in(ifile);
+
+        int n_barriers = in.get_int("number of barriers");
+        if(n_barriers < 12) settings_parser::error("number of barriers", "at least 12 barriers are needed, read " + std::to_string(n_barriers));
         barriere.resize(n_barriers);
         for(int i=0 ; i<n_barriers ; i++){
-            ifile>>barriere[i];
+            std::string name = "barrier [" + std::to_string(i) + "]";
+            barriere[i] = in.get_double(name);
+            if(barriere[i] < 0) settings_parser::error(name, "barriers must be >= 0");
         }
-        ifile>>E_b;
-        ifile>>F;
-        ifile>>filling;
-        ifile>>temperatura;
-        ifile>>nu_0;
-        ifile>>n_class;
-        ifile>>total_time;
+        E_b = in.get_double("E_b");
+        if(E_b < 0) settings_parser::error("E_b", "must be >= 0");
+        F = in.get_double("F (deposition rate)");
+        if(F < 0) settings_parser::error("F (deposition rate)", "must be >= 0");
+        filling = in.get_double("filling");
+        if(filling <= 0 || filling > 1) settings_parser::error("filling", "must be in (0, 1]");
+        temperatura = in.get_double("temperature");
+        if(temperatura <= 0) settings_parser::error("temperature", "must be > 0 K");
+        nu_0 = in.get_double("nu_0 (prefactor)");
+        if(nu_0 <= 0) settings_parser::error("nu_0 (prefactor)", "must be > 0");
+        n_class = in.get_int("number of diffusion classes");
+        if(n_class <= 0 || n_class > MAX_CLASSES) settings_parser::error("number of diffusion classes", "must be in [1, " + std::to_string(MAX_CLASSES) + "]");
+        total_time = in.get_double("total physical time");
+        if(total_time <= 0) settings_parser::error("total physical time", "must be > 0 s");
 
-        std::string bool_tracker;
-        ifile>>bool_tracker;
-        if(bool_tracker=="T") output_file=true;
-        else if(bool_tracker=="F") output_file=false;
-        ifile>>bool_tracker;
-        if(bool_tracker=="T") fill_first_layer=true;
-        else if(bool_tracker=="F") fill_first_layer=false;
-        ifile>>bool_tracker;
-        if(bool_tracker=="T") print_bond_file=true;
-        else if(bool_tracker=="F") print_bond_file=false;
-        ifile>>additional_cost_corner[0];
-        ifile>>additional_cost_corner[1];
-
-        if(n_class > MAX_CLASSES){
-            std::cerr << "Error: n_class = " << n_class << " exceeds MAX_CLASSES = " << MAX_CLASSES << std::endl;
-            std::exit(1);
+        output_file = in.get_bool("write MC_processes.out");
+        fill_first_layer = in.get_bool("fill first layer");
+        print_bond_file = in.get_bool("write bond_tracker.out");
+        differentiate_corner_sites = in.get_bool("differentiate corner sites");
+        if(differentiate_corner_sites && n_barriers < 17){
+            settings_parser::error("number of barriers", "corner sites are active but only " + std::to_string(n_barriers) + " barriers are given (17 needed)");
         }
+        max_runtime_hours = in.get_double("max runtime");
+        if(max_runtime_hours < 0) settings_parser::error("max runtime", "must be >= 0 hours (0 = no limit)");
+
+        if(in.remaining() > 0){
+            settings_parser::error("end of file", std::to_string(in.remaining()) + " values more than expected (comments must start with '#')");
+        }
+        std::cout << "Corner sites: " << (differentiate_corner_sites ? "differentiated" : "treated as border") << std::endl;
+
         for (int i=0; i<MAX_CLASSES; i++) movements_per_class[i]=0;
         for (int i=0 ; i< MAX_CLASSES; i++){ for(int j=0 ; j<MAX_PROCESSES ; j++){for (int k=0; k<2; k++) map_class_processes[i][j][k]=-1;}}
         P.resize(n_class, 0.0);
@@ -941,7 +1017,7 @@ void metropolis::get_process_name(int cl){
     else if (cl >= 15 && cl <= 21)
     {
         nn = cl - 15; num=std::to_string(nn);
-        process_name = "111border to 111border different facets with: " + num + " nearest neighbors";
+        process_name = "111B o CR to 111B o CR different facets with: " + num + " nearest neighbors";
         if (nn>0) count_bond(nn-1);
     }
     else if (cl >= 22 && cl <= 28)
@@ -977,7 +1053,7 @@ void metropolis::get_process_name(int cl){
     else if (cl >= 53 && cl <= 59)
     {
         nn = cl - 53; num=std::to_string(nn);
-        process_name = "100center to 100border with: " + num + " nearest neighbors";
+        process_name = "100center to 100B o CR with: " + num + " nearest neighbors";
         if (nn>0) count_bond(nn-1+5);
         //if(s.get_TOPl(pos)== 14 && s.get_TOPl(next)==15) {
         //    occupation_AC--;
@@ -990,7 +1066,7 @@ void metropolis::get_process_name(int cl){
     else if (cl >= 60 && cl <= 65)
     {
         nn = cl - 60; num=std::to_string(nn);
-        process_name = "111border-push-100  with: " + num + " nearest neighbors";
+        process_name = "111B o CR-push-100  with: " + num + " nearest neighbors";
         if (nn>0) count_bond(nn-1);
         //occupation_1B--;
         //occupation_0C++;
@@ -1275,7 +1351,7 @@ void metropolis::probability_filler(){
     for(int i=0 ; i < n_class ; i++){
         if(movements_per_class[i] > 0) {
             double p = probability_calculator(i);
-            if(movements_per_class[i]> 6*n_deposited) std::exit(0);
+            if(movements_per_class[i]> 6*n_deposited) stop_simulation("error: class " + std::to_string(i) + " has more processes than 6 x deposited atoms");
             P[i] = movements_per_class[i] * p;
         }
     }
@@ -1331,7 +1407,7 @@ void metropolis::time_prob_calc(){
     if(time>total_time) {
         std::cerr<<" Too much long time increment: "<<time<<" with a total available time for the simulation of: "<<total_time<<std::endl;
         print_final_configuration();
-        std::exit(0);
+        stop_simulation("physical simulation time reached");
     }
 
     double random = dist_time(rng);
@@ -1349,12 +1425,12 @@ void metropolis::time_prob_calc(){
 
         if(chosen_class<0){
             std::cerr << "Warning: chosen_class has no size "<<std::endl;
-            std::exit(0);
+            stop_simulation("error: no class chosen for the diffusion event");
         }
         int mcount = movements_per_class[chosen_class];
         if(mcount <= 0){
             std::cerr << "Warning: chosen_class has no movements: " << chosen_class << std::endl;
-            std::exit(0);
+            stop_simulation("error: chosen class " + std::to_string(chosen_class) + " has no processes");
         }
         std::uniform_int_distribution<> dist(0, mcount - 1);
         int movement = dist(rng);
@@ -1377,7 +1453,7 @@ void metropolis::time_prob_calc(){
             }
             */
 
-            std::exit(0);
+            stop_simulation("error: chosen process starts from an empty site (class " + std::to_string(chosen_class) + ")");
         }
         if(movement < 0 || movement >= get_MCP_size(chosen_class)){
             std::cerr << "Error: movement index out of range: " << movement << " >= " << get_MCP_size(chosen_class) << std::endl;
@@ -1477,7 +1553,7 @@ void metropolis::print_occupation(){
                    << "    "<<occupation_1CR<< "    "<<occupation_0CR<< "    "<<occupation_ACR<<std::endl;
     if(occupation_1C<0){
         print_final_configuration();
-         std::exit(0);
+        stop_simulation("error: negative occupation of 111 center sites");
     }
     occupation_1B = 0;
     occupation_1C = 0;
@@ -1595,15 +1671,94 @@ void metropolis::algorithm(){
             if(output_file) output << "End of the deposition, there are " << n_deposited << " filled sites " << std::endl;
             go= true;
         }
+
+        if(runtime_exceeded()){
+            stop_reason = "runtime limit reached";
+            break;
+        }
     }
+}
+
+/*
+ * Wall clock time (seconds) since the start of the simulation, and check
+ * of the runtime limit given in mc_settings.in (0 = no limit) .
+ */
+double metropolis::elapsed_runtime() const{
+    return std::chrono::duration<double>(std::chrono::steady_clock::now() - start_runtime).count();
+}
+
+bool metropolis::runtime_exceeded() const{
+    return max_runtime_hours > 0.0 && elapsed_runtime() >= max_runtime_hours * 3600.0;
+}
+
+/*
+ * Writes run_info.out (always written): the regime of the simulation,
+ * the size of the system and the output files that will be written .
+ */
+void metropolis::write_run_info(){
+    run_info_file.open("run_info.out");
+    if(!run_info_file.is_open()){
+        std::cerr << "Warning: could not create run_info.out" << std::endl;
+        return;
+    }
+    std::time_t now = std::time(nullptr);
+    run_info_file << "================ kMC RUN INFO ================" << std::endl;
+    run_info_file << "start:                    " << std::ctime(&now);
+    run_info_file << "temperature (K):          " << temperatura << std::endl;
+    run_info_file << "deposition rate F:        " << F << " atoms/s per site" << std::endl;
+    run_info_file << "corner sites:             " << (differentiate_corner_sites ? "differentiated" : "treated as border") << std::endl;
+    run_info_file << std::endl << "--- system size ---" << std::endl;
+    run_info_file << "core  (coordinates_settings.in): d_pv = " << c_crd.get_dpv() << "  spigolo = " << c_crd.get_spigolo()
+                  << "  n_cut = " << c_crd.get_Ncut(0) << " " << c_crd.get_Ncut(1) << " " << c_crd.get_Ncut(2) << " " << c_crd.get_Ncut(3) << std::endl;
+    run_info_file << "shell (shell_settings.in):       d_pv = " << crd.get_dpv() << "  spigolo = " << crd.get_spigolo()
+                  << "  n_cut = " << crd.get_Ncut(0) << " " << crd.get_Ncut(1) << " " << crd.get_Ncut(2) << " " << crd.get_Ncut(3) << std::endl;
+    run_info_file << "core atoms:               " << c_crd.sites_size() << std::endl;
+    run_info_file << "shell sites:              " << crd.sites_size()
+                  << "  (of which second layer: " << s.get_upper_sites().size() << ")" << std::endl;
+    run_info_file << std::endl << "--- stop conditions ---" << std::endl;
+    run_info_file << "physical time (s):        " << total_time << std::endl;
+    run_info_file << "runtime limit:            ";
+    if(max_runtime_hours > 0.0) run_info_file << max_runtime_hours << " hours" << std::endl;
+    else run_info_file << "none" << std::endl;
+    run_info_file << std::endl << "--- output files ---" << std::endl;
+    run_info_file << "run_info.out, occupation.out, occ****.out, occ****FINAL.out";
+    if(output_file) run_info_file << ", MC_processes.out";
+    if(print_bond_file) run_info_file << ", bond_tracker.out";
+    run_info_file << std::endl;
+}
+
+/*
+ * Appends to run_info.out why and when the simulation stopped .
+ */
+void metropolis::write_final_report(const std::string& reason){
+    if(final_report_written || !run_info_file.is_open()) return;
+    final_report_written = true;
+    std::time_t now = std::time(nullptr);
+    run_info_file << std::endl << "--- end of the simulation ---" << std::endl;
+    run_info_file << "stop reason:              " << reason << std::endl;
+    run_info_file << "end:                      " << std::ctime(&now);
+    run_info_file << "physical time reached (s): " << time << " / " << total_time << std::endl;
+    run_info_file << "runtime (hours):          " << elapsed_runtime() / 3600.0 << std::endl;
+    run_info_file << "deposited atoms:          " << n_deposited << std::endl;
+}
+
+/*
+ * Stops the program writing the reason in run_info.out .
+ */
+void metropolis::stop_simulation(const std::string& reason){
+    write_final_report(reason);
+    std::exit(0);
 }
 
 /*
  * The public entry point to start the entire simulation workflow .
  */
 void metropolis::simulation(){
+    start_runtime = std::chrono::steady_clock::now();
+    write_run_info();
     start_of_the_sim();
     algorithm();
     if(output_file) print_output();
     print_final_configuration();
+    write_final_report(stop_reason);
 }
