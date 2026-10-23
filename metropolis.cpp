@@ -1633,25 +1633,26 @@ void metropolis::algorithm(){
         
         if(deposition){
             bool done=false;
-            //if(n_deposited>10 && F>1){
-            //    activate_all();
-            //    int counter=0;
-            //    int lui;
-            //    for(int i=0; i<atoms.size(); i++){
-            //        if(s.get_TOPl(i)>13) {
-            //            if(atoms[i]) counter++;
-            //            else lui=i;
-            //        }
-            //    }
-            //    if(counter==31) {
-            //        atoms[lui]=true;
-            //        n_deposited++;
-            //        pos=lui;
-            //        print_occupation();
-//
-            //        done=true;
-            //    }
-            //} 
+            if(n_deposited>10 && F>1){
+                activate_all();
+                int counter=0;
+                int lui=-1;
+                for(int i=0; i<atoms.size(); i++){
+                    //second layer sites only
+                    if(s.get_TOPl(i)==14 || s.get_TOPl(i)==15 || s.get_TOPl(i)==24) {
+                        if(atoms[i]) counter++;
+                        else lui=i;
+                    }
+                }
+                if(counter==31 && lui>=0) {
+                    atoms[lui]=true;
+                    n_deposited++;
+                    pos=lui;
+                    print_occupation();
+
+                    done=true;
+                }
+            }
             if(!done) deposition_func();
             print_configuration();
         } else {
