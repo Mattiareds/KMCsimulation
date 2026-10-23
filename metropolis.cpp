@@ -28,6 +28,7 @@ int occupation_ACR = 0;
  * the remaining values are read in order. Every missing or wrong value stops
  * the program with a message that names the parameter.
  */
+
 namespace {
 class settings_parser{
     private:
