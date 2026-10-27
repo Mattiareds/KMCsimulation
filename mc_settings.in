@@ -3,16 +3,16 @@
 17                  # number of barriers (12 without corners, 17 with corners)
 0.14 0.55 0.24 0.07 0.64 0.59 0.34 0.46 0.20 0.24 0.35 0.51 0.18 0.10 0.57 0.53 0.42    # barriers (eV), see legend below
 0.2                 # E_b: additional energy per nearest neighbour (eV)
-10000               # F: deposition rate per site (atoms/s)
+10                 # F: deposition rate per site (atoms/s)
 0.40                # filling: fraction of sites filled before stopping the deposition
 340                 # temperature (K)
 1e12                # nu_0: TST prefactor (1/s)
 130                 # number of diffusion classes
-60                  # total physical time of the simulation (s)
+100                  # total physical time of the simulation (s)
 F                   # write MC_processes.out with every event (T/F)
 F                   # fill the first layer at the start (T/F)
-T                   # write bond_tracker.out with the broken bonds (T/F)
-T                   # differentiate corner sites (T/F): F = corner sites are treated as border sites
+F                   # write bond_tracker.out with the broken bonds (T/F)
+F                   # differentiate corner sites (T/F): F = corner sites are treated as border sites
 0                   # max runtime of the program (hours, wall clock); 0 = no limit
 
 

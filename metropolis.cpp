@@ -770,19 +770,19 @@ void metropolis::second_layer_updates(int upper_site){
         if(s.get_TOPl(upper_site)==s.get_TOPl(pv)){
             if(is_deactivated(pv)==false){
                 add_process(upper_site, pv, 53);
-                add_process(pv, upper_site, 53);   // NUOVO: link inverso
+                add_process(pv, upper_site, 53);   // link inverso
             }
         }
         else if((s.get_TOPl(upper_site)==14 && s.get_TOPl(pv)==15) ){
             if(is_deactivated(pv)==false){
                 add_process(upper_site, pv, 53);
-                add_process(pv, upper_site, 81);   // NUOVO: link inverso, classe corretta
+                add_process(pv, upper_site, 81);   // link inverso, classe corretta
             }
         }
         else if((s.get_TOPl(upper_site)==15 && s.get_TOPl(pv)==14)){
             if(is_deactivated(pv)==false){
                 add_process(upper_site, pv, 81);
-                add_process(pv, upper_site, 53);   // NUOVO: link inverso, classe corretta
+                add_process(pv, upper_site, 53);   // link inverso, classe corretta
             }
         }
         else if((s.get_TOPl(upper_site)==24 && s.get_TOPl(pv)==15)){
@@ -1068,6 +1068,7 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 60; num=std::to_string(nn);
         process_name = "111B o CR-push-100  with: " + num + " nearest neighbors";
+        std::cout<< "111B o CR-push-100  with: " + num + " nearest neighbors"<<std::endl;
         if (nn>0) count_bond(nn-1);
         //occupation_1B--;
         //occupation_0C++;
@@ -1317,10 +1318,10 @@ void metropolis::classification(){
                     }
                 }
                 // Push logic
-                else if(atoms[pv] && (s.get_TOPl(pv)==7 || s.get_TOPl(pv)==16)  && (s.get_TOPl(site)==8 || s.get_TOPl(site)==17)){
+                else if(atoms[pv] && (((s.get_TOPl(pv)==7 || s.get_TOPl(pv)==16)  && (s.get_TOPl(site)==10 || s.get_TOPl(site)==17)) /**/ || /* */ ((s.get_TOPl(pv)==14 || s.get_TOPl(pv)==15 || s.get_TOPl(pv)==24)  && (s.get_TOPl(site)==10 || s.get_TOPl(site)==17)) ) ){
                     auto nn = s.get_table_of_nn(pv);
                     for(int n : nn){
-                        if(!atoms[n] && s.get_TOPl(n)==0){
+                        if(!atoms[n] && (s.get_TOPl(n)==0 || s.get_TOPl(n)==14 )){
                             int actual_class = 60 + nn_count;
                             dynamic_processes.emplace_back(site, n, actual_class);
                             map_of_class_filler(actual_class, site, n);
@@ -1464,6 +1465,7 @@ void metropolis::time_prob_calc(){
         next = mv[1];
         pos = mv[0];
         get_process_name(chosen_class); 
+        
         if(output_file) print_output();
         
         for(int t=0 ; t <= 12 ; t++){
@@ -1634,7 +1636,7 @@ void metropolis::algorithm(){
         
         if(deposition){
             bool done=false;
-            if(n_deposited>10 && F>1){
+            if(n_deposited>20 && F>1){
                 activate_all();
                 int counter=0;
                 int lui=-1;
