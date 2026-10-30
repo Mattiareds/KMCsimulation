@@ -1068,7 +1068,7 @@ void metropolis::get_process_name(int cl){
     {
         nn = cl - 60; num=std::to_string(nn);
         process_name = "111B o CR-push-100  with: " + num + " nearest neighbors";
-        std::cout<< "111B o CR-push-100  with: " + num + " nearest neighbors"<<std::endl;
+        //std::cout<< "111B o CR-push-100  with: " + num + " nearest neighbors"<<std::endl;
         if (nn>0) count_bond(nn-1);
         //occupation_1B--;
         //occupation_0C++;
